@@ -1,11 +1,14 @@
 # rust-rag-agent
 
-A minimal, high-performance Agentic RAG CLI written in Rust.
+A minimal, ultra-fast Agentic RAG CLI written in Rust.
 
-- **Local CPU Embeddings** — Powered by `fastembed` (ONNX Runtime, BGE-small-en model) for vectorizing `./docs/*.txt` and incoming queries locally. No external embedding API required.
-- **Agentic Function Calling** — Groq LPUs (`llama-3.3-70b-versatile`) dynamically decide when to call the `search_documents` tool based on prompt context.
-- **Automatic `.env` Setup** — Loads API credentials and model configurations automatically at startup using `dotenvy`.
-- **Architecture Documentation** — See [ARCHITECTURE.md](file:///home/anmol/Projects/rust-rag-agent/ARCHITECTURE.md) for full module specifications and sequence diagrams.
+- **100% Single Binary Architecture** — Completely self-contained. Requires **no Docker containers**, PostgreSQL, Qdrant, or external database daemons.
+- **Local CPU Embeddings** — Powered by `fastembed` (ONNX Runtime, BGE-small-en model) for vectorizing `./docs/` files and queries locally on CPU.
+- **Multi-Format Document Support** — Indexes `.txt`, `.md`, `.pdf`, `.csv`, and `.json` files seamlessly.
+- **Sliding-Window Text Chunking** — Automatically chunks long documents into 300–400 word passages to maximize vector search accuracy.
+- **Agentic Function Calling** — Driven by Groq LPUs (`llama-3.3-70b-versatile`) via OpenAI-compatible tool definitions.
+- **Automatic `.env` Setup** — Loads API keys and configurations automatically via `dotenvy`.
+- **Architecture Documentation** — See [ARCHITECTURE.md](file:///home/anmol/Projects/rust-rag-agent/ARCHITECTURE.md) for full sequence diagrams and module designs.
 
 ---
 
@@ -31,7 +34,7 @@ cargo build --release
 cargo run --release
 ```
 
-Or run the compiled binary directly:
+Or run the single compiled binary directly:
 
 ```bash
 ./target/release/rust-rag-agent
@@ -41,10 +44,10 @@ Or run the compiled binary directly:
 
 ## How It Works
 
-1. On startup, `fastembed` downloads the BGE-small-en model (~130MB ONNX model from Hugging Face on first run, cached locally afterwards).
-2. All `.txt` files in `./docs/` are embedded into an in-memory vector store (`DocStore`).
+1. On startup, `fastembed` downloads/loads the BGE-small-en model (~130MB ONNX model cached locally).
+2. All `.txt`, `.md`, `.pdf`, `.csv`, and `.json` files in `./docs/` are parsed, chunked, and embedded into an in-memory vector store (`DocStore`).
 3. You type questions at the `> ` terminal prompt.
-4. If a question can be answered by local documents, Groq automatically invokes `search_documents`, retrieves matching passages via cosine similarity, and synthesizes the answer.
+4. Groq dynamically decides when to call `search_documents`, retrieves relevant document passages via cosine similarity, and synthesizes the answer.
 
 ---
 
@@ -55,9 +58,10 @@ rust-rag-agent/
 ├── Cargo.toml          # Crate manifest & dependencies
 ├── .env                # Local API keys & configuration
 ├── .gitignore          # Ignored build outputs and credentials
-├── ARCHITECTURE.md     # System design & sequence diagrams
+├── ARCHITECTURE.md     # Single-binary architecture & diagrams
 ├── README.md           # Quickstart guide
-├── docs/               # Local document corpus (.txt)
+├── implementation_plan.md # Roadmap & implementation plan
+├── docs/               # Local document corpus (.txt, .pdf, .csv, .md)
 │   ├── groq_ollama.txt
 │   ├── rag_basics.txt
 │   └── rust_vs_python.txt
@@ -66,16 +70,13 @@ rust-rag-agent/
     ├── agent.rs        # Agentic tool execution loop
     ├── llm.rs          # OpenAI-compatible API client
     ├── embeddings.rs   # FastEmbed ONNX embedding wrapper
-    └── store.rs        # In-memory vector store & cosine search
+    └── store.rs        # Multi-format vector store & cosine search
 ```
 
 ---
 
-## Model & Environment Overrides
+## Technical Specs & Roadmap
 
-You can customize models in `.env` or via shell environment variables:
-
-```bash
-export GROQ_MODEL=llama-3.3-70b-versatile
-export OLLAMA_MODEL=llama3.2
-```
+- **Vector Engine**: Embedded Rust vector store with `.vector_cache.bin` disk persistence.
+- **Document Chunking**: 300–400 words per chunk with 50-word sliding overlap.
+- **Web Search Integration**: Optional Tavily / Brave Search API integration.
