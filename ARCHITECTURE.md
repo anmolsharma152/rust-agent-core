@@ -1,13 +1,14 @@
-# Rust RAG Agent Architecture & Design Specification
+# Rust Agent Architecture & Design Specification
 
 ## 1. Overview & Core Philosophy
 
-`rust-rag-agent` is a lightweight, high-performance Agentic RAG system built in Rust. 
+`rust-rag-agent` is a lightweight, high-performance, single-binary Autonomous AI Agent built in Rust.
 
 ### Core Architectural Principles
-- **100% Single Binary Constraint**: Zero Docker containers, PostgreSQL, or external vector database servers required.
-- **Embedded Local AI Engine**: Runs local vector embeddings on CPU via `fastembed` (ONNX Runtime, BGE-small-en model).
-- **Qwen 2.5 Function Calling**: Default model updated to `qwen-2.5-coder-32b` or `qwen-2.5-72b-instruct` on Groq to eliminate Llama 3.3 raw tag syntax corruptions (`<function=...`) and tool over-triggering.
+- **100% Single Binary Constraint**: Zero Docker containers, PostgreSQL, or external database daemons required.
+- **Custom Agent Loop (No `rig-core`)**: Uses a custom-built async agent loop in `src/agent.rs` for 100% fine-grained control, zero framework bloat, and fast iteration.
+- **No MCP Servers Needed**: Operates without IPC/stdio MCP server subprocesses. All tools (web search, document retrieval, file system, API integrations) are declared as native Rust functions (`ToolDef` schemas in `src/llm.rs`) or called via direct REST APIs (`reqwest`).
+- **Qwen 2.5 Recommended Engine**: Default model set to `qwen-2.5-coder-32b` or `qwen-2.5-72b-instruct` on Groq for top-tier function calling precision.
 - **In-Process Vector Store & Cache**: Fast cosine similarity vector search in CPU memory with binary disk persistence (`.vector_cache.bin`).
 
 ```
@@ -37,24 +38,25 @@
              |                          | Web Search API      |
              | Vectors                  | (Tavily / Brave)    |
              v                          +---------------------+
-  +----------+----------+
-  | FastEmbed ONNX Model|
-  | (src/embeddings.rs) |
-  +---------------------+
+  +----------+----------+                          |
+  | FastEmbed ONNX Model|                          v
+  | (src/embeddings.rs) |               +---------------------+
+  +---------------------+               | Cloud Integrations  |
+                                        | (Composio / GitHub) |
+                                        +---------------------+
 ```
 
 ---
 
-## 2. Tool-Calling Architecture & Syntax Protection
+## 2. Tool-Calling Architecture & Tool Suite
 
-### Dedicated Tool Definitions
-To prevent model hallucinations and vector search misuse:
-1. `search_documents(query)`: RAG vector search over indexed document passages.
-   - Enforces `maxLength: 120` on queries to prevent runaway string generation loops.
-2. `list_documents()`: Returns the full array of ingested filenames in `DocStore`.
-
-### Clean System Prompt Rule
-The system prompt in `agent.rs` avoids manual text descriptions of tool syntax (`<function=...`). This prevents double-prompting conflict with Groq's API engine and ensures clean native JSON payload generation.
+### Native Tool Definitions (`src/llm.rs`)
+1. **`list_documents`**: Returns the array of ingested filenames in `DocStore` (prevents vector search hallucinations when users ask for file metadata).
+2. **`search_documents`**: RAG vector similarity search over chunked document passages (`maxLength: 120` query constraint).
+3. **`web_search`**: Live internet queries via Tavily API or Brave Search API.
+4. **`list_dir` / `read_file` / `write_file`**: Direct local file system inspection and modifications.
+5. **`run_command`**: Sandboxed terminal command execution.
+6. **Composio REST Tools**: Authenticated third-party API execution (Gmail, GitHub, Slack) via direct REST calls.
 
 ---
 
@@ -78,17 +80,21 @@ The system prompt in `agent.rs` avoids manual text descriptions of tool syntax (
 sequenceDiagram
     autonumber
     actor User
-    participant Agent as Agent (agent.rs)
-    participant LLM as Groq LLM (llm.rs)
+    participant Agent as Custom Agent Loop (agent.rs)
+    participant LLM as Groq / Qwen 2.5 (llm.rs)
     participant Store as Vector Store (store.rs)
-    participant Embedder as FastEmbed (embeddings.rs)
+    participant Web as Web Search API (Tavily/Brave)
 
-    User->>Agent: Send query (e.g. "List embedded documents")
-    Agent->>LLM: POST /chat/completions (messages + tools)
-    LLM-->>Agent: Return ToolCall (list_documents)
-    Agent->>Store: get_document_titles()
-    Store-->>Agent: Return ["rag_basics.txt", "groq_ollama.txt", ...]
+    User->>Agent: Send query (e.g. "Check latest AI news and search docs for RAG notes")
+    Agent->>LLM: POST /chat/completions (messages + tool schemas)
+    LLM-->>Agent: Return ToolCall (web_search query="latest AI news 2026")
+    Agent->>Web: POST https://api.tavily.com/search
+    Web-->>Agent: Return web search markdown snippets
     Agent->>LLM: POST /chat/completions (tool result message)
-    LLM-->>Agent: Return final list of documents
+    LLM-->>Agent: Return ToolCall (search_documents query="RAG notes")
+    Agent->>Store: search(query_vector, top_k=3)
+    Store-->>Agent: Return document passages
+    Agent->>LLM: POST /chat/completions (tool result message)
+    LLM-->>Agent: Return final combined answer
     Agent-->>User: Display answer in terminal REPL
 ```

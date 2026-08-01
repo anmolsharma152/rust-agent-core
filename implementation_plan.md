@@ -1,16 +1,37 @@
-# Rust RAG Agent Master Implementation Plan
+# Rust Agent Master Implementation Plan
 
-This implementation plan incorporates all technical decisions, architecture choices, and bug fixes discussed across recent sessions for `rust-rag-agent`.
+This master implementation plan details the architecture and roadmap for expanding `rust-rag-agent` into a fully autonomous, custom-built Rust AI Agent.
 
 ---
 
 ## Architectural Decision Summary
 
 > [!IMPORTANT]
-> **Single Binary Constraint**: The application will strictly remain a 100% self-contained single Rust binary. External database daemons (Qdrant, PostgreSQL, Milvus, Docker) are excluded.
+> **Custom Agent Loop (No `rig-core`)**: The system will use a custom-built, lightweight async agent loop in `src/agent.rs`. Third-party frameworks like `rig-core` are excluded to maintain 100% fine-grained control and zero framework overhead.
+
+> [!IMPORTANT]
+> **No MCP Servers Needed**: The agent will NOT use Model Context Protocol (MCP) servers or IPC subprocesses. All tools (web search, document search, system commands, API integrations) will be implemented as native Rust functions (`ToolDef` schemas in `src/llm.rs`) or called via direct REST APIs.
+
+> [!NOTE]
+> **Single Binary Execution**: The application strictly remains a 100% self-contained single Rust binary. External database daemons (Qdrant, PostgreSQL, Milvus, Docker) are excluded.
 
 > [!TIP]
-> **Recommended LLM Engine (Qwen 2.5)**: Default model updated to `qwen-2.5-coder-32b` or `qwen-2.5-72b-instruct` on Groq to eliminate Llama 3.3 raw tag syntax corruptions (`<function=...`) and tool over-triggering.
+> **Recommended LLM Engine (Qwen 2.5)**: Default model set to `qwen-2.5-coder-32b` or `qwen-2.5-72b-instruct` on Groq to eliminate Llama 3.3 raw tag syntax corruptions (`<function=...`) and tool over-triggering.
+
+---
+
+## Tool Suite Specification (Native Rust & REST APIs)
+
+The Custom Agent Loop will support a comprehensive, native tool suite:
+
+1. **`list_documents`**: Returns the array of ingested filenames in `DocStore` (prevents vector search hallucinations when users ask for file metadata).
+2. **`search_documents`**: RAG vector similarity search over chunked document passages (`maxLength: 120` query constraint).
+3. **`web_search`**: Live internet queries via Tavily API or Brave Search API.
+4. **`list_dir`**: Browse local project directories (`std::fs::read_dir`).
+5. **`read_file`**: Read text from specific files on disk (`std::fs::read_to_string`).
+6. **`write_file`**: Create or update local project files.
+7. **`run_command`**: Execute sandboxed terminal/bash commands (`tokio::process::Command`).
+8. **REST API Integrations (Composio / Cloud APIs)**: Direct REST calls using `reqwest` for external services (Gmail, GitHub, Notion) without MCP server subprocesses.
 
 ---
 
@@ -20,22 +41,23 @@ This implementation plan incorporates all technical decisions, architecture choi
 
 #### [MODIFY] [llm.rs](file:///home/anmol/Projects/rust-rag-agent/src/llm.rs)
 - **Fix Syntax Corruption**: Set `temperature: 0.0` for deterministic parameter generation.
-- **Query Length Constraints**: Add `maxLength: 120` to `search_documents` parameters schema to prevent 10,000-word runaway string loops.
-- **Add `list_documents_tool()`**: Define a dedicated tool returning the full array of ingested filenames in `DocStore` so the LLM doesn't rely on `search_documents(top_k=3)` for file metadata.
+- **Query Length Constraints**: Add `maxLength: 120` to `search_documents` parameters schema.
+- **Add `list_documents_tool()`**: Dedicated tool schema returning ingested filenames.
+- **Add `web_search_tool()`**: Tool schema for Tavily/Brave live web search.
 
 #### [MODIFY] [agent.rs](file:///home/anmol/Projects/rust-rag-agent/src/agent.rs)
 - **Clean System Prompt**: Remove manual tool syntax text from `SYSTEM_PROMPT` to prevent double-prompting tag corruption.
-- **Dispatch `list_documents`**: Add execution handler returning the list of document titles.
+- **Multi-Tool Dispatcher**: Handle `list_documents`, `search_documents`, `web_search`, and file system tools inside the custom `run_loop`.
 
 #### [MODIFY] [.env](file:///home/anmol/Projects/rust-rag-agent/.env)
-- Update default model to `GROQ_MODEL=qwen-2.5-coder-32b` for top-tier function calling precision.
+- Set default model to `GROQ_MODEL=qwen-2.5-coder-32b` for top-tier function calling precision.
 
 ---
 
 ### Phase 2: Multi-Format Ingestion & Sliding-Window Chunking
 
 #### [MODIFY] [Cargo.toml](file:///home/anmol/Projects/rust-rag-agent/Cargo.toml)
-Add parsing crates:
+Add lightweight parsing crates:
 - `pdf-extract` for PDF page text extraction.
 - `csv` for tabular row-to-text formatting (`Header: Value`).
 - `pulldown-cmark` for Markdown parsing.
@@ -47,21 +69,11 @@ Add parsing crates:
 
 ---
 
-### Phase 3: System & Web Search Tool Expansion
+### Phase 3: System & API Tool Expansion
 
-#### [MODIFY] [llm.rs](file:///home/anmol/Projects/rust-rag-agent/src/llm.rs) & [agent.rs](file:///home/anmol/Projects/rust-rag-agent/src/agent.rs)
-- **Web Search Tool (`web_search`)**: Integrate Tavily / Brave Search API for live internet queries.
-- **System Tools (Optional)**: Add `list_dir`, `read_file`, `write_file`, and sandboxed `run_command` handlers.
-
----
-
-### Phase 4: Documentation & Synchronization
-
-#### [MODIFY] [README.md](file:///home/anmol/Projects/rust-rag-agent/README.md) & [ARCHITECTURE.md](file:///home/anmol/Projects/rust-rag-agent/ARCHITECTURE.md)
-Update user guides, sequence diagrams, and Qwen model setup instructions.
-
-#### [MODIFY] [implementation_plan.md](file:///home/anmol/Projects/rust-rag-agent/implementation_plan.md)
-Keep project root implementation plan 100% in sync with Antigravity artifact copy.
+#### [MODIFY] [src/agent.rs](file:///home/anmol/Projects/rust-rag-agent/src/agent.rs) & [src/llm.rs](file:///home/anmol/Projects/rust-rag-agent/src/llm.rs)
+- Implement `list_dir`, `read_file`, `write_file`, and sandboxed `run_command` tools.
+- Add REST client for external cloud service integrations (Composio / GitHub / Gmail REST endpoints).
 
 ---
 
@@ -74,4 +86,5 @@ Keep project root implementation plan 100% in sync with Antigravity artifact cop
 ### Manual Verification
 - Test `list_documents` query in CLI REPL.
 - Test queries asking for general world facts to verify Qwen answers directly without over-triggering tools.
+- Test web search queries using live Tavily / Brave API calls.
 - Test loading mixed `.pdf`, `.csv`, `.md`, and `.txt` files from `./docs/`.

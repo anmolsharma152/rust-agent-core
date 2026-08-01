@@ -1,14 +1,15 @@
 # rust-rag-agent
 
-A minimal, ultra-fast Agentic RAG CLI written in Rust.
+A minimal, ultra-fast Autonomous AI Agent written in Rust.
 
 - **100% Single Binary Architecture** — Self-contained. Requires **no Docker containers**, PostgreSQL, Qdrant, or external database daemons.
+- **Custom Agent Loop (No `rig-core`)** — Built with a custom async loop in `src/agent.rs` for 100% fine-grained control and zero framework bloat.
+- **No MCP Servers Needed** — All tools (RAG, file system, web search, cloud APIs) run natively inside Rust or via direct REST endpoints (`reqwest`).
 - **Qwen 2.5 Recommended Engine** — Optimally tuned for `qwen-2.5-coder-32b` or `qwen-2.5-72b-instruct` on Groq for top-tier function calling precision.
 - **Local CPU Embeddings** — Powered by `fastembed` (ONNX Runtime, BGE-small-en model) for vectorizing `./docs/` files and queries locally on CPU.
 - **Multi-Format Document Support** — Indexes `.txt`, `.md`, `.pdf`, `.csv`, and `.json` files seamlessly.
-- **Dedicated Tool Suite** — Includes `search_documents`, `list_documents`, and optional `web_search`.
+- **Native Tool Suite** — Includes `search_documents`, `list_documents`, `web_search` (Tavily/Brave), file tools, and Composio REST API integration.
 - **Automatic `.env` Setup** — Loads API keys and configurations automatically via `dotenvy`.
-- **Architecture Documentation** — See [ARCHITECTURE.md](file:///home/anmol/Projects/rust-rag-agent/ARCHITECTURE.md) for full sequence diagrams and module designs.
 
 ---
 
@@ -43,15 +44,6 @@ Or run the single compiled binary directly:
 
 ---
 
-## How It Works
-
-1. On startup, `fastembed` loads the local ONNX BGE-small-en embedding model.
-2. All `.txt`, `.md`, `.pdf`, `.csv`, and `.json` files in `./docs/` are parsed, chunked, and embedded into an in-memory vector store (`DocStore`).
-3. You type questions at the `> ` terminal prompt.
-4. Qwen 2.5 dynamically decides whether to answer general facts directly or call `search_documents` / `list_documents`.
-
----
-
 ## Project Structure
 
 ```text
@@ -68,8 +60,8 @@ rust-rag-agent/
 │   └── rust_vs_python.txt
 └── src/                # Rust source modules
     ├── main.rs         # Entry point & REPL loop
-    ├── agent.rs        # Agentic tool execution loop
-    ├── llm.rs          # OpenAI-compatible API client
+    ├── agent.rs        # Custom async agent loop & tool dispatcher
+    ├── llm.rs          # OpenAI-compatible API client & tool schemas
     ├── embeddings.rs   # FastEmbed ONNX embedding wrapper
     └── store.rs        # Multi-format vector store & cosine search
 ```
@@ -80,4 +72,4 @@ rust-rag-agent/
 
 - **Phase 1**: Tool-calling syntax stabilization & Qwen 2.5 engine integration.
 - **Phase 2**: Multi-format ingestion (`.pdf`, `.csv`, `.md`), sliding-window chunking, and `.vector_cache.bin` disk persistence.
-- **Phase 3**: Web search tool (`web_search`) and expanded system tools.
+- **Phase 3**: Native `web_search` (Tavily/Brave API), file system tools (`list_dir`, `read_file`, `write_file`), and Composio REST integration.
