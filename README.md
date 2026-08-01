@@ -2,11 +2,11 @@
 
 A minimal, ultra-fast Agentic RAG CLI written in Rust.
 
-- **100% Single Binary Architecture** — Completely self-contained. Requires **no Docker containers**, PostgreSQL, Qdrant, or external database daemons.
+- **100% Single Binary Architecture** — Self-contained. Requires **no Docker containers**, PostgreSQL, Qdrant, or external database daemons.
+- **Qwen 2.5 Recommended Engine** — Optimally tuned for `qwen-2.5-coder-32b` or `qwen-2.5-72b-instruct` on Groq for top-tier function calling precision.
 - **Local CPU Embeddings** — Powered by `fastembed` (ONNX Runtime, BGE-small-en model) for vectorizing `./docs/` files and queries locally on CPU.
 - **Multi-Format Document Support** — Indexes `.txt`, `.md`, `.pdf`, `.csv`, and `.json` files seamlessly.
-- **Sliding-Window Text Chunking** — Automatically chunks long documents into 300–400 word passages to maximize vector search accuracy.
-- **Agentic Function Calling** — Driven by Groq LPUs (`llama-3.3-70b-versatile`) via OpenAI-compatible tool definitions.
+- **Dedicated Tool Suite** — Includes `search_documents`, `list_documents`, and optional `web_search`.
 - **Automatic `.env` Setup** — Loads API keys and configurations automatically via `dotenvy`.
 - **Architecture Documentation** — See [ARCHITECTURE.md](file:///home/anmol/Projects/rust-rag-agent/ARCHITECTURE.md) for full sequence diagrams and module designs.
 
@@ -20,6 +20,7 @@ Create a `.env` file in the project root:
 
 ```env
 GROQ_API_KEY=gsk_...
+GROQ_MODEL=qwen-2.5-coder-32b
 ```
 
 *(Get your key at [console.groq.com](https://console.groq.com)).*
@@ -44,10 +45,10 @@ Or run the single compiled binary directly:
 
 ## How It Works
 
-1. On startup, `fastembed` downloads/loads the BGE-small-en model (~130MB ONNX model cached locally).
+1. On startup, `fastembed` loads the local ONNX BGE-small-en embedding model.
 2. All `.txt`, `.md`, `.pdf`, `.csv`, and `.json` files in `./docs/` are parsed, chunked, and embedded into an in-memory vector store (`DocStore`).
 3. You type questions at the `> ` terminal prompt.
-4. Groq dynamically decides when to call `search_documents`, retrieves relevant document passages via cosine similarity, and synthesizes the answer.
+4. Qwen 2.5 dynamically decides whether to answer general facts directly or call `search_documents` / `list_documents`.
 
 ---
 
@@ -56,11 +57,11 @@ Or run the single compiled binary directly:
 ```text
 rust-rag-agent/
 ├── Cargo.toml          # Crate manifest & dependencies
-├── .env                # Local API keys & configuration
+├── .env                # Local API keys & model overrides
 ├── .gitignore          # Ignored build outputs and credentials
 ├── ARCHITECTURE.md     # Single-binary architecture & diagrams
 ├── README.md           # Quickstart guide
-├── implementation_plan.md # Roadmap & implementation plan
+├── implementation_plan.md # Master roadmap & implementation plan
 ├── docs/               # Local document corpus (.txt, .pdf, .csv, .md)
 │   ├── groq_ollama.txt
 │   ├── rag_basics.txt
@@ -75,8 +76,8 @@ rust-rag-agent/
 
 ---
 
-## Technical Specs & Roadmap
+## Master Roadmap
 
-- **Vector Engine**: Embedded Rust vector store with `.vector_cache.bin` disk persistence.
-- **Document Chunking**: 300–400 words per chunk with 50-word sliding overlap.
-- **Web Search Integration**: Optional Tavily / Brave Search API integration.
+- **Phase 1**: Tool-calling syntax stabilization & Qwen 2.5 engine integration.
+- **Phase 2**: Multi-format ingestion (`.pdf`, `.csv`, `.md`), sliding-window chunking, and `.vector_cache.bin` disk persistence.
+- **Phase 3**: Web search tool (`web_search`) and expanded system tools.

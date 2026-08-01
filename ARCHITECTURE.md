@@ -4,11 +4,11 @@
 
 `rust-rag-agent` is a lightweight, high-performance Agentic RAG system built in Rust. 
 
-### Core Architectural Mandate: Single Binary Execution
-- **Zero Runtime Dependencies**: Does **NOT** require Docker, PostgreSQL, Qdrant, or any external vector database servers.
+### Core Architectural Principles
+- **100% Single Binary Constraint**: Zero Docker containers, PostgreSQL, or external vector database servers required.
 - **Embedded Local AI Engine**: Runs local vector embeddings on CPU via `fastembed` (ONNX Runtime, BGE-small-en model).
-- **In-Process Vector Store & Cache**: Performs fast cosine similarity vector search in CPU memory, with binary disk caching (`.vector_cache.bin`) for instant persistence across restarts.
-- **Cloud/Local Agentic Tool Calling**: Driven by Groq LPUs (`llama-3.3-70b-versatile`) with optional local Ollama fallback.
+- **Qwen 2.5 Function Calling**: Default model updated to `qwen-2.5-coder-32b` or `qwen-2.5-72b-instruct` on Groq to eliminate Llama 3.3 raw tag syntax corruptions (`<function=...`) and tool over-triggering.
+- **In-Process Vector Store & Cache**: Fast cosine similarity vector search in CPU memory with binary disk persistence (`.vector_cache.bin`).
 
 ```
                       +-------------------+
@@ -29,7 +29,7 @@
   |  (src/store.rs)     |               |  (src/llm.rs)       |
   +----------+----------+               +----------+----------+
   | Multi-Format Loader |               | Groq Cloud API      |
-  | (.txt, .md, .pdf,   |               | (Llama 3.3 70B)     |
+  | (.txt, .md, .pdf,   |               | (Qwen 2.5 Coder 32B)|
   |  .csv, .json)       |               +---------------------+
   | Text Chunker (400w) |                          |
   | Vector Cache (.bin) |                          v
@@ -45,7 +45,20 @@
 
 ---
 
-## 2. Multi-Format Ingestion & Chunking Pipeline
+## 2. Tool-Calling Architecture & Syntax Protection
+
+### Dedicated Tool Definitions
+To prevent model hallucinations and vector search misuse:
+1. `search_documents(query)`: RAG vector search over indexed document passages.
+   - Enforces `maxLength: 120` on queries to prevent runaway string generation loops.
+2. `list_documents()`: Returns the full array of ingested filenames in `DocStore`.
+
+### Clean System Prompt Rule
+The system prompt in `agent.rs` avoids manual text descriptions of tool syntax (`<function=...`). This prevents double-prompting conflict with Groq's API engine and ensures clean native JSON payload generation.
+
+---
+
+## 3. Multi-Format Ingestion & Chunking Pipeline
 
 ### Multi-Format Extraction
 - **`.txt` / `.md`**: Loaded via standard UTF-8 file readers (`pulldown-cmark` for Markdown parsing).
@@ -54,37 +67,8 @@
 - **`.json`**: Structured objects converted to formatted context strings.
 
 ### Sliding-Window Text Chunker
-To fit within the BGE embedding model's 512-token context limit:
 1. Long documents are split into **300–400 word passages**.
 2. A **50-word sliding overlap** is maintained between adjacent passages to prevent context loss across boundaries.
-
-### Persistent Binary Disk Cache
-- On startup, `DocStore` computes SHA-256 hashes of all files in `./docs/`.
-- If checksums match `./docs/.vector_cache.bin`, vectors are reloaded instantly from disk without running embedding inferences.
-
----
-
-## 3. Module Breakdown
-
-### `src/main.rs`
-- **Role**: Entry point & environment setup.
-- **Responsibilities**: Loads `.env` via `dotenvy`, loads/caches vector store from `./docs/`, registers Groq API provider, and runs terminal REPL.
-
-### `src/agent.rs`
-- **Role**: Agent execution loop (`Agent`, `run_loop`, `retrieve`).
-- **Responsibilities**: Manages multi-turn conversation messages, dispatches LLM tool calls (`search_documents`, `web_search`), and feeds results back to the LLM.
-
-### `src/llm.rs`
-- **Role**: Universal OpenAI-compatible REST Client (`LlmClient`).
-- **Responsibilities**: Handles `/v1/chat/completions` API calls, formats `ToolDef` schemas, and parses model responses.
-
-### `src/embeddings.rs`
-- **Role**: Local Vector Embedding Service (`Embedder`).
-- **Responsibilities**: Wraps `fastembed::TextEmbedding` (`BGESmallENV15`), prefixing `passage: ` for indexing and `query: ` for retrieval vectors.
-
-### `src/store.rs`
-- **Role**: In-Memory Vector Engine & Disk Cache (`DocStore`).
-- **Responsibilities**: Reads multi-format files, applies text chunking, stores 384-dimensional `f32` vectors, and calculates exact cosine similarity.
 
 ---
 
@@ -99,14 +83,12 @@ sequenceDiagram
     participant Store as Vector Store (store.rs)
     participant Embedder as FastEmbed (embeddings.rs)
 
-    User->>Agent: Send query (e.g. "Summarize quarterly numbers from report.pdf")
+    User->>Agent: Send query (e.g. "List embedded documents")
     Agent->>LLM: POST /chat/completions (messages + tools)
-    LLM-->>Agent: Return ToolCall (search_documents query="quarterly numbers")
-    Agent->>Embedder: embed_query("quarterly numbers")
-    Embedder-->>Agent: Return query vector [f32; 384]
-    Agent->>Store: search(query_vector, top_k=3)
-    Store-->>Agent: Return top matching PDF chunks + similarity scores
+    LLM-->>Agent: Return ToolCall (list_documents)
+    Agent->>Store: get_document_titles()
+    Store-->>Agent: Return ["rag_basics.txt", "groq_ollama.txt", ...]
     Agent->>LLM: POST /chat/completions (tool result message)
-    LLM-->>Agent: Return final synthesized answer
+    LLM-->>Agent: Return final list of documents
     Agent-->>User: Display answer in terminal REPL
 ```
