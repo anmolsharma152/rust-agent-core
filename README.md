@@ -5,7 +5,7 @@ A minimal, ultra-fast Autonomous AI Agent written in Rust.
 - **100% Single Binary Architecture** — Self-contained. Requires **no Docker containers**, PostgreSQL, Qdrant, or external database daemons.
 - **Custom Agent Loop (No `rig-core`)** — Built with a custom async loop in `src/agent.rs` for 100% fine-grained control and zero framework bloat.
 - **No MCP Servers Needed** — All tools (RAG, file system, web search, cloud APIs) run natively inside Rust or via direct REST endpoints (`reqwest`).
-- **Qwen 2.5 Recommended Engine** — Optimally tuned for `qwen-2.5-coder-32b` or `qwen-2.5-72b-instruct` on Groq for top-tier function calling precision.
+- **Qwen 2.5 Recommended Engine** — Optimally tuned for `llama-3.3-70b-versatile` or `llama-3.3-70b-versatile` on Groq for top-tier function calling precision.
 - **Local CPU Embeddings** — Powered by `fastembed` (ONNX Runtime, BGE-small-en model) for vectorizing `./docs/` files and queries locally on CPU.
 - **Multi-Format Document Support** — Indexes `.txt`, `.md`, `.pdf`, `.csv`, and `.json` files seamlessly.
 - **Native Tool Suite** — Includes `search_documents`, `list_documents`, `web_search` (Tavily/Brave), file tools, and Composio REST API integration.
@@ -21,8 +21,15 @@ Create a `.env` file in the project root:
 
 ```env
 GROQ_API_KEY=gsk_...
-GROQ_MODEL=qwen-2.5-coder-32b
+GROQ_MODEL=llama-3.3-70b-versatile
+
+OPENROUTER_API_KEY=sk-or-v1-...
+OPENROUTER_MODEL=meta-llama/llama-3.3-70b-instruct
+
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.0-flash
 ```
+
 
 *(Get your key at [console.groq.com](https://console.groq.com)).*
 

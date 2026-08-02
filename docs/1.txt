@@ -1,0 +1,95 @@
+Here is the complete, start-to-finish execution plan to build your resume in FlowCV. This integrates your entire technical footprint—from the local bare-metal container architecture to your core deep learning and reinforcement learning capabilities.
+
+### **PHASE 1: FlowCV Design Engine Settings**
+
+To replicate the high-density, ATS-compliant Masai template, you must manually enforce these visual rules in the FlowCV block editor:
+
+1. **The Layout Grid:** Select the **Single Column (Top to Bottom)** layout. Delete any pre-existing sidebars. Your bullet points need the full horizontal width of the page to fit the technical depth without awkwardly wrapping text.
+2. **Typography & Spacing:** Use **Inter** or **Roboto** at **10pt or 11pt**. Set the line spacing to standard, but if the content spills onto page two, compress the margins to "Compact" and slightly tighten the line spacing.
+3. **Section Dividers:** In the global design tab, find the "Section Headings" styling and add a solid bottom border (a 1px underline). This creates the distinct compartments required by the standard layout.
+4. **Skills Format:** When building the Skills block, disable all visual progress bars, dots, or charts. Set the display to "Tags" or "Comma-separated text".
+
+---
+
+### **PHASE 2: The Content Blocks**
+
+Copy and paste the text below directly into the corresponding FlowCV sections. Replace the bracketed text with your actual grades.
+
+#### **1. Profile / Contact**
+
+* **Full Name:** Anmol Sharma
+* **Location:** Jaipur, India
+* **Contact:** ozymandias.work@gmail.com | +91-84128-80194
+* **Links:** LinkedIn | GitHub
+
+#### **2. Professional Summary**
+
+AI Systems Engineer specializing in Generative AI, multi-agent workflows, and local LLMOps. Adept at building low-latency RAG pipelines, deploying deep learning and computer vision models, and architecting stateful, containerized infrastructure. Proficient in Python, TypeScript, and SQL, with experience optimizing systems for edge deployment via ONNX and Docker. Blends rigorous algorithmic development with enterprise-level technical support experience to deliver highly optimized, scalable intelligent infrastructure.
+
+#### **3. Skills**
+
+* **Languages:** Python, TypeScript, JavaScript, Rust, SQL, Bash
+* **Local AI & Infrastructure:** Docker, Caddy (Reverse Proxy), PostgreSQL, Valkey/Redis, Linux (Arch), Ollama, ChromaDB, FAISS
+* **Generative AI & Agentic:** RAG, Multi-Agent Systems, LangGraph, LangChain, Prompt Engineering, SearXNG
+* **ML, DL & Edge Inference:** PyTorch, Deep Learning (GANs, VAEs), Reinforcement Learning, Computer Vision (YOLO, OpenCV), ONNX Runtime, Silero VAD, NLP
+
+#### **4. Professional Experience**
+
+**Independent Research & Development** | *AI Systems Architect*
+*06/2025 – Present | Self-Directed/Open Source*
+
+* Architected a privacy-first, bare-metal local AI infrastructure using Docker, orchestrating Ollama for on-device LLM inference, ChromaDB for vector retrieval, and SearXNG for agentic web search, all routed via a Caddy reverse proxy.
+* Engineered **Nexus Bot** and **CodexEngine**, utilizing LangGraph-driven multi-agent actor nodes integrated with PostgreSQL-backed persistent memory to maintain stateful context across complex interactions.
+* Developed **MedPal AI**, a neuro-symbolic Dual-RAG architecture that routes domain-specific medical queries through dense retrieval and strict medical-logic execution paths to mitigate hallucination.
+* Built an emotion-aware real-time voice assistant, migrating backend Rust VAD processing to client-side ONNX Runtime and Silero VAD to achieve sub-200ms interaction latency.
+
+**Teleperformance** | *Technical Support Executive*
+*07/2023 – 04/2024 | Jaipur, India*
+
+* Diagnosed and resolved complex software issues in high-pressure production environments, maintaining an exceptional CSAT score of 4.8/5.
+* Translated critical user issues into technical requirements and executed SQL-based data analysis, significantly improving tool reliability and internal decision-making workflows.
+
+**Freelance** | *Backend Developer*
+*01/2022 – 12/2024 | Remote*
+
+* Developed modular CLI utilities and automated backend systems utilizing Python, TypeScript, and headless web-scraping pipelines to optimize data acquisition.
+
+#### **5. Engineered Systems & Projects**
+
+**DEEP RL POLICY OPTIMIZATION** | *Python, PyTorch, Reinforcement Learning*
+
+* Developed custom Reinforcement Learning environments and baseline algorithms (A2C/PPO) using PyTorch.
+* Optimized agent decision-making within dynamic state spaces, aggressively managing exploration-exploitation trade-offs to improve policy convergence.
+
+**REAL-TIME FACE MASK DETECTION** | *Python, Computer Vision, YOLO, ONNX*
+
+* Developed a real-time computer vision detection pipeline utilizing YOLO and MobileNet to accurately classify correct, incorrect, and missing face mask usage.
+* Optimized CPU inference to achieve >= 15 FPS with an F1-score > 0.90, seamlessly deploying via ONNX Runtime for lightweight edge execution.
+
+**NEXT-DAY STOCK RETURN PREDICTION** | *Python, Ensemble Learning, Time-Series*
+
+* Built a next-day return forecasting pipeline utilizing a stacked ensemble of ElasticNet, Random Forest, and Gradient Boosting models.
+* Implemented leakage-safe rolling features with walk-forward validation and market-context features, substantially improving model robustness during volatile market periods.
+
+#### **6. Education**
+
+**Indian Institute of Technology (IIT), Mandi**
+*Minor in Data Science and Artificial Intelligence | 05/2025 – Present*
+
+* **Grade:** [Insert CGPA/Percentage]
+* **Key Coursework:** Machine Learning Foundations, Deep Learning, NLP, Reinforcement Learning, GANs/VAEs, Computer Vision.
+
+**Jaipur National University**
+*Bachelor of Computer Applications (BCA) | 06/2019 – 05/2022*
+
+* **Grade:** [Insert CGPA/Percentage]
+
+**Symbiosis School for Liberal Arts**
+*Bachelor of Arts in Political Science and Economics | 2016 – 2020*
+
+* **Grade:** [Insert CGPA/Percentage]
+
+#### **7. Awards & Languages**
+
+* **Honors:** NTSE Scholar
+* **Languages:** English (C2), Hindi (Native), Japanese (A2-B1)

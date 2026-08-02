@@ -1,0 +1,142 @@
+Here is your ultimate "Zero to Hero" execution plan for building the perfect, ATS-optimized AI Systems Engineer resume in FlowCV.
+
+We will start with the exact architectural settings of the document, and then move block-by-block through the content, including the new structure for your course grades.
+
+---
+
+### **PHASE 1: FlowCV Design & Customization (The Engine)**
+
+Before you paste a single word, configure the document settings.
+
+1. **Template:** Select **Precision Line**. This gives you the clean horizontal dividers under each section heading.
+2. **Layout:** Choose **Top to Bottom (Single Column)**. Do not use sidebars; they mess with ATS parsing and waste horizontal space needed for your technical bullets.
+3. **Typography:** Set the font to **Inter** or **Roboto**. Set the font size to **10pt or 11pt**.
+4. **Colors:** Set the primary text to pure black (`#000000`). If FlowCV allows a primary color for links/headings, use your electric blue (`#3b82f6`) sparingly, or just stick to black for maximum corporate compliance.
+5. **Margins:** Set margins to **Standard** or **Compact** (if you need more room to fit everything on exactly one page).
+6. **Icons:** In the Profile/Contact section settings, turn Icons **ON** and select the minimalist/outline style.
+
+---
+
+### **PHASE 2: Section-by-Section Content Build**
+
+Create each section in FlowCV and copy-paste the exact text below. Replace the bracketed text `[like this]` with your actual grades.
+
+#### **1. Profile / Contact Information**
+
+*(Use the basic Profile block. FlowCV will format this at the top automatically.)*
+
+* **Full Name:** Anmol Sharma
+* **Email:** ozymandias.work@gmail.com
+* **Phone:** +91-84128-80194
+* **Location:** Jaipur, India
+* **Links:** Add your LinkedIn URL and GitHub URL (Name the labels simply "LinkedIn" and "GitHub").
+
+#### **2. Professional Summary**
+
+*(Use the "Profile/Summary" block)*
+
+> AI Systems Engineer specializing in production-ready Generative AI and applied machine learning. Adept at engineering multi-agent systems, building low-latency RAG pipelines, and optimizing complex models for edge deployment via ONNX and Docker. Blends rigorous algorithmic development with enterprise-level technical support experience to deliver scalable, reliable, and highly optimized intelligent infrastructure.
+
+#### **3. Skills**
+
+*(Use the "Skills" block. **Crucial:** Turn OFF skill bars or dots. Choose the "Comma separated" or "Tags" display style so it looks like a clean list.)*
+
+* **Systems & Infrastructure:** Python, FastAPI, SQL, Docker, PostgreSQL, Linux (Arch), Bash, Git
+
+
+* **Generative AI & LLMOps:** RAG, Multi-Agent Systems, LangGraph, LangChain, Prompt Engineering, Vector Databases (FAISS)
+
+
+* **Machine Learning & Edge Inference:** PyTorch, ONNX Runtime, Computer Vision (YOLO, OpenCV), Ensemble Learning, NLP
+
+
+
+#### **4. Professional Experience**
+
+*(Use the "Employment/Experience" block. Ensure dates are aligned to the right.)*
+
+**Independent Research & Development** | *AI Systems Architect*
+*06/2025 – Present | Self-Directed/Open Source*
+
+* Architected production-ready AI systems and multi-LLM pipelines, focusing on low-latency inference, agentic workflows, and robust state management.
+* Engineered **MedPal AI** (a neuro-symbolic Dual-RAG architecture) and **Nexus Bot** (a LangGraph-driven multi-agent system), successfully handling domain-specific queries and reducing hallucination rates by 40%.
+* Deployed an emotion-aware real-time voice assistant utilizing client-side ONNX Runtime and Silero VAD, achieving sub-200ms interaction latency for seamless speech interaction.
+* Developed **CodexEngine**, integrating a graph-based actor node with PostgreSQL-backed persistent memory to maintain long-term contextual recall across complex user turns.
+
+**Teleperformance** | *Technical Support Executive*
+*07/2023 – 04/2024 | Jaipur, India*
+
+* Diagnosed and resolved complex software issues in high-pressure production environments, maintaining an exceptional CSAT score of 4.8/5.
+
+
+* Translated critical user issues into technical requirements and executed SQL-based data analysis, significantly improving tool reliability and internal decision-making workflows.
+
+
+
+**Freelance** | *Python Developer*
+*01/2022 – 12/2024 | Remote*
+
+* Developed modular CLI utilities, automated Python backend systems, and headless web-scraping pipelines using Playwright to optimize data acquisition.
+* Mentored junior developers on Linux environment optimization, terminal-centric productivity workflows, and custom Neovim configurations to accelerate onboarding.
+
+#### **5. Projects**
+
+*(Use the "Projects" block. Put the tech stack in the subtitle or right next to the title.)*
+
+**NEXT-DAY STOCK RETURN PREDICTION** | *Python, Ensemble Learning, Time-Series*
+
+* Built a next-day return forecasting pipeline utilizing a stacked ensemble of ElasticNet, Random Forest, and Gradient Boosting models.
+
+
+* Implemented leakage-safe rolling features with walk-forward validation and market-context features, substantially improving model robustness during volatile market periods.
+
+
+
+**REAL-TIME FACE MASK DETECTION** | *Python, Computer Vision, YOLO*
+
+* Developed a real-time computer vision detection pipeline utilizing YOLO and MobileNet to accurately classify correct, incorrect, and missing face mask usage.
+
+
+* Optimized CPU inference to achieve 15+ FPS with an F1-score > 0.90, seamlessly deploying via ONNX Runtime for lightweight edge execution.
+
+
+
+#### **6. Education (With Course Grades)**
+
+*(Use the "Education" block. Put your grade directly in the description or subtitle field.)*
+
+**Indian Institute of Technology (IIT), Mandi**
+*Minor in Data Science and Artificial Intelligence | 05/2025 – Present*
+
+* **Grade:** [Insert your CGPA, e.g., 8.5/10.0 or percentage]
+* **Key Coursework:** Machine Learning Foundations, Advanced Deep Learning, NLP, Reinforcement Learning, GANs/VAEs.
+
+**Jaipur National University**
+*Bachelor of Computer Applications (BCA) | 06/2019 – 05/2022*
+
+* **Grade:** [Insert your CGPA or Percentage here]
+
+**Symbiosis School for Liberal Arts**
+*Bachelor of Arts in Political Science and Economics | 2016 – 2020*
+
+* **Grade:** [Insert your CGPA or Percentage here]
+
+#### **7. Awards & Languages**
+
+*(Use a custom "Text" block or "Certifications/Awards" block)*
+
+* **Honors:** NTSE Scholar
+
+
+* **Languages:** English (C2), Hindi (Native), Japanese (A2-B1)
+
+
+
+---
+
+### **PHASE 3: The Final Polish**
+
+Once everything is pasted in:
+
+1. **Check the Length:** This must fit on **exactly one page**. If it spills over onto a second page, go to FlowCV's design settings and slightly reduce the line spacing, or change the page margins to "Compact".
+2. **Export as PDF:** Never send a Word document. Always export the final file as a PDF so the ATS reads the text layers perfectly. Name the file `Anmol_Sharma_AI_Systems_Engineer_Resume.pdf`.

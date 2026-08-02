@@ -16,7 +16,7 @@ This master implementation plan details the architecture and roadmap for expandi
 > **Single Binary Execution**: The application strictly remains a 100% self-contained single Rust binary. External database daemons (Qdrant, PostgreSQL, Milvus, Docker) are excluded.
 
 > [!TIP]
-> **Recommended LLM Engine (Qwen 2.5)**: Default model set to `qwen-2.5-coder-32b` or `qwen-2.5-72b-instruct` on Groq to eliminate Llama 3.3 raw tag syntax corruptions (`<function=...`) and tool over-triggering.
+> **Recommended LLM Engine (Qwen 2.5)**: Default model set to `llama-3.3-70b-versatile` or `llama-3.3-70b-versatile` on Groq to eliminate Llama 3.3 raw tag syntax corruptions (`<function=...`) and tool over-triggering.
 
 ---
 

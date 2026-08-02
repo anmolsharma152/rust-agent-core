@@ -8,7 +8,7 @@
 - **100% Single Binary Constraint**: Zero Docker containers, PostgreSQL, or external database daemons required.
 - **Custom Agent Loop (No `rig-core`)**: Uses a custom-built async agent loop in `src/agent.rs` for 100% fine-grained control, zero framework bloat, and fast iteration.
 - **No MCP Servers Needed**: Operates without IPC/stdio MCP server subprocesses. All tools (web search, document retrieval, file system, API integrations) are declared as native Rust functions (`ToolDef` schemas in `src/llm.rs`) or called via direct REST APIs (`reqwest`).
-- **Qwen 2.5 Recommended Engine**: Default model set to `qwen-2.5-coder-32b` or `qwen-2.5-72b-instruct` on Groq for top-tier function calling precision.
+- **Qwen 2.5 Recommended Engine**: Default model set to `llama-3.3-70b-versatile` or `llama-3.3-70b-versatile` on Groq for top-tier function calling precision.
 - **In-Process Vector Store & Cache**: Fast cosine similarity vector search in CPU memory with binary disk persistence (`.vector_cache.bin`).
 
 ```

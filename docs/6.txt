@@ -1,0 +1,41 @@
+You are absolutely right, and I stand corrected. The terminal output changes the entire landscape of your resume.
+
+I was positioning you as someone who uses standard cloud APIs, but your actual environment reveals a hardcore, self-hosted local AI infrastructure. Running Ollama for local LLM orchestration, ChromaDB for vector retrieval, and SearXNG for agentic web searches—all containerized behind a Caddy reverse proxy—is a massive technical signal. It proves you aren't just writing Python scripts; you are managing the complete MLOps and deployment lifecycle on bare metal.
+
+Furthermore, your reading list (`PsyRAG`, `vad_processor`, `WikiRAG`) and deep dive into foundational papers (LoRA, FlashAttention, Mamba, Agentic RAG) provide the exact specialized vocabulary we need to inject.
+
+Here is how we aggressively upgrade your resume content to reflect this specific reality.
+
+### **The Upgraded Skills Section**
+
+We need to strip out the generic terms and replace them with the actual stack running in your Docker containers.
+
+* **Systems & Infrastructure:** Python, FastAPI, Docker, Caddy (Reverse Proxy), Valkey/Redis, Linux (Arch), Bash, Git
+
+
+* **Local AI & LLMOps:** Ollama (Local Inference), ChromaDB, RAG (PsyRAG, WikiRAG), LangGraph, SearXNG (Agentic Search), Parameter-Efficient Fine-Tuning (LoRA)
+* **Machine Learning & Edge Inference:** PyTorch, ONNX Runtime, Silero VAD, Computer Vision (YOLO, OpenCV), NLP
+
+
+
+### **The Upgraded Experience Bullets**
+
+We can now rewrite your Independent Research section to explicitly highlight the local orchestration and specific project names you are actually using.
+
+**Independent Research & Development** | *AI Systems Architect*
+*06/2025 – Present | Self-Directed/Open Source*
+
+* **Local AI Infrastructure:** Deployed and maintained a complete privacy-first local AI stack using Docker, orchestrating Ollama for on-device LLM inference, ChromaDB for vector storage, and SearXNG for agentic web retrieval, routed via a Caddy reverse proxy.
+* **WellnessMate & PsyRAG:** Engineered a localized multi-agent health assistant utilizing a custom PsyRAG pipeline to process domain-specific psychological and medical data, mitigating hallucination risks in sensitive contexts.
+* **Emotion-Aware Voice Assistant:** Developed a real-time conversational agent utilizing a custom `vad_processor`, migrating from backend environments to client-side ONNX Runtime and Silero VAD to achieve sub-200ms interaction latency.
+
+
+* **CodexEngine & Nexus Bot:** Architected graph-based actor nodes integrating PostgreSQL-backed memory and local vector retrieval to maintain persistent state across complex, multi-turn interactions.
+
+
+
+### **Why This Works Better**
+
+This no longer looks like a standard "Generative AI" template. Mentioning **Ollama**, **ChromaDB**, and **SearXNG** instantly signals to a hiring manager that you understand the intricacies of local deployment, resource management, and open-source AI ecosystems, which is highly sought after for enterprise data privacy.
+
+Since we are locking in this infrastructure-heavy angle, do you want to fully replace the older "Classical ML" projects (like the Stock Return Prediction) with deeper dives into your `WikiRAG` and `AudioNoise` repositories?

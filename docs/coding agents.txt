@@ -1,0 +1,69 @@
+   ~   22:43:47  npm list -g --depth=0
+/home/anmol/.npm-global/lib
+├── @anthropic-ai/claude-code@2.1.167
+├── @google/jules@0.1.42
+├── @openai/codex@0.139.0
+├── @vtsls/language-server@0.3.0
+└── openclaw@2026.5.12
+
+
+   ~   22:43:52  which hermes
+/home/anmol/.local/bin/hermes
+
+   ~   22:43:58  which opencode
+/home/anmol/.opencode/bin/opencode
+
+   ~   22:44:02  which antigravity
+/usr/bin/antigravity
+
+   ~   22:44:07  pacman -Qs devin
+local/windsurf-next 3.1.1005_next.296eca6010-1
+    Devin Desktop (next channel) - formerly Windsurf Editor
+
+   ~   22:44:27  which aider
+/home/anmol/.local/bin/aider
+
+   ~   22:45:25  fastfetch
+
+                  -`                      DISTRO 󰑃  Arch Linux x86_64
+                 .o+`                    │ ├ 󰑃  Linux 7.0.11-zen1-1-zen
+                `ooo/                    │ ├󰏖 󰑃  14 (flatpak), 1217 (pacman)
+               `+oooo:                   │ ├ 󰑃  29 days
+              `+oooooo:                  │ └ 󰑃  zsh 5.9.1
+              -+oooooo+:                  DE/WM 󰑃  Mutter (Wayland)
+            `/:-:++oooo+:                │ ├󰉼 󰑃  Adwaita-dark
+           `/++++/+++++++:               │ ├󰀻 󰑃  MoreWaita [GTK2/3/4]
+          `/++++++++++++++:              │ ├ 󰑃  Bibata-Modern-Classic (24px)
+         `/+++ooooooooooooo/`            │ ├ 󰑃  MesloLGS Nerd Font (14pt)
+        ./ooosssso++osssssso+`           │ └ 󰑃  ghostty 1.3.1-arch2
+       .oossssso-````/ossssss+`          󰌢 SYSTEM 󰑃  Inspiron 13-5378
+      -osssssso.      :ssssssso.         │ ├󰻠 󰑃  Intel(R) Core(TM) i5-7200U (4) @ 3.10 GHz
+     :osssssss/        osssso+++.        │ ├󰻑 󰑃  HD Graphics 620
+    /ossssssss/        +ssssooo/-        │ ├󰍹 󰑃  1920x1080 @ 60Hz
+  `/ossssso+/:-        -:/+osssso+-      │ ├󰾆 󰑃  5.29 GiB / 15.48 GiB (34%)
+ `+sso+:-`                 `.-/+oso:     │ ├󰓡 󰑃  0 B / 11.74 GiB (0%)
+`++:.                           `-/+/    │ ├󰅐 󰑃  11 mins
+.`                                 `/     AUDIO 󰑃  true
+                                                                                 
+
+
+   ~   22:45:31  dysk
+┌──────────┬─────┬────┬────┬─────────┬────┬────┬─────────────┐
+│filesystem│type │disk│used│   use   │free│size│mount point  │
+├──────────┼─────┼────┼────┼─────────┼────┼────┼─────────────┤
+│/dev/sdb1 │ext4 │HDD │284G│29% █▌   │699G│983G│/mnt/orico1Tb│
+│/dev/sda2 │btrfs│SSD │427G│86% ████▎│ 72G│499G│/            │
+└──────────┴─────┴────┴────┴─────────┴────┴────┴─────────────┘
+
+   ~   22:45:37  docker ps
+CONTAINER ID   IMAGE                                 COMMAND                  CREATED       STATUS                    PORTS                                                                                             NAMES
+4db6e79e870f   ghcr.io/open-webui/open-webui:main    "bash start.sh"          3 days ago    Up 11 minutes (healthy)   8080/tcp                                                                                          open-webui
+76ce23183f03   odysseus-odysseus                     "/usr/local/bin/entr…"   9 days ago    Up 11 minutes             127.0.0.1:7000->7000/tcp                                                                          odysseus-odysseus-1
+e80ce20a0c43   chromadb/chroma:latest                "dumb-init -- chroma…"   9 days ago    Up 11 minutes             127.0.0.1:8100->8000/tcp                                                                          odysseus-chromadb-1
+fa1d0c351a2d   searxng/searxng:latest                "/bin/sh -c 'set -eu…"   9 days ago    Up 11 minutes (healthy)   127.0.0.1:8083->8080/tcp                                                                          odysseus-searxng-1
+98cff51cc8bc   binwiederhier/ntfy                    "ntfy serve"             9 days ago    Up 11 minutes             127.0.0.1:8091->80/tcp                                                                            odysseus-ntfy-1
+d1ab354c2f23   searxng/searxng:latest                "/usr/local/searxng/…"   9 days ago    Up 11 minutes             127.0.0.1:8080->8080/tcp                                                                          searxng
+14f610749e4c   valkey/valkey:latest                  "docker-entrypoint.s…"   9 days ago    Up 11 minutes             6379/tcp                                                                                          searxng-redis
+daa527c9ec60   glanceapp/glance                      "/app/glance --confi…"   11 days ago   Up 11 minutes             127.0.0.1:8081->8080/tcp                                                                          glance
+78e47c34cc74   ghcr.io/gethomepage/homepage:latest   "docker-entrypoint.s…"   12 days ago   Up 11 minutes (healthy)   127.0.0.1:8082->3000/tcp                                                                          homepage
+67696ef64b20   caddy:2                               "caddy run --config …"   12 days ago   Up 11 minutes             0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp, 443/udp, 2019/tcp   caddy

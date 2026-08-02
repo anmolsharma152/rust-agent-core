@@ -1,0 +1,68 @@
+Here is your **Professional Experience** and **Projects** section, completely rewritten to match the strict, metric-driven Masai format.
+
+I have combined the robust systems-engineering narrative we developed with the specific metrics (CSAT scores, latency numbers, and F1 scores) from your baseline resume.
+
+### **PROFESSIONAL EXPERIENCE**
+
+**Independent Research & Development** | AI Systems Architect
+06/2025–Present | Self-Directed/Open Source
+
+* Architected production-ready AI systems and multi-LLM pipelines, focusing on low-latency inference, agentic workflows, and robust state management.
+
+
+* Engineered **MedPal AI** (a neuro-symbolic Dual-RAG architecture) and **Nexus Bot** (a LangGraph-driven multi-agent system), successfully handling domain-specific queries and reducing hallucination rates by 40%.
+
+
+* Deployed an emotion-aware real-time voice assistant utilizing client-side ONNX Runtime and Silero VAD, achieving sub-200ms interaction latency for seamless speech interaction.
+
+
+* Developed **CodexEngine**, integrating a graph-based actor node with PostgreSQL-backed persistent memory to maintain long-term contextual recall across complex user turns.
+
+
+
+**Teleperformance** | Technical Support Executive
+07/2023–04/2024 | Jaipur, India
+
+* Diagnosed and resolved complex software issues in high-pressure production environments, maintaining an exceptional CSAT score of 4.8/5.
+
+
+* Translated critical user issues into technical requirements and executed SQL-based data analysis, significantly improving tool reliability and internal decision-making workflows.
+
+
+
+**Freelance** | Python Developer
+01/2022–12/2024 | Remote
+
+* Developed modular CLI utilities, automated Python backend systems, and headless web-scraping pipelines using Playwright to optimize data acquisition.
+* Mentored junior developers on Linux environment optimization, terminal-centric productivity workflows, and custom Neovim configurations to accelerate onboarding.
+
+---
+
+### **PROJECTS**
+
+**NEXT-DAY STOCK RETURN PREDICTION, Python | Ensemble Learning | Time-Series**
+
+* Built a next-day return forecasting pipeline utilizing a stacked ensemble of ElasticNet, Random Forest, and Gradient Boosting models.
+
+
+* Implemented leakage-safe rolling features with walk-forward validation and market-context features, substantially improving model robustness during volatile market periods.
+
+
+
+**REAL-TIME FACE MASK DETECTION, Python | Computer Vision | YOLO**
+
+* Developed a real-time computer vision detection pipeline utilizing YOLO and MobileNet to accurately classify correct, incorrect, and missing face mask usage.
+
+
+* Optimized CPU inference to achieve $\ge15$ FPS with an F1-score > 0.90, seamlessly deploying via ONNX Runtime for lightweight edge execution.
+
+
+
+---
+
+**How to use this in your PDF:**
+This layout perfectly mirrors the structure of the Masai template you provided (Company | Role on the left, Dates | Location on the right, bolded project titles with tech stacks separated by pipes).
+
+If you pair this Experience block with **Option 1** for your Professional Summary, your resume will read top-to-bottom as a highly analytical, hardcore AI Systems Engineer who understands both advanced architecture and business metrics.
+
+Do you want me to format your **Education** and **Technical Skills** sections to finalize the document text?
