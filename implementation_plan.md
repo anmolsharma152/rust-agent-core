@@ -1,6 +1,6 @@
 # Rust Agent Core Master Implementation Plan
 
-This master implementation plan details the architecture and roadmap for expanding `rust-agent-core` into a fully autonomous, custom-built Rust AI Agent Engine and cross-platform CLI tool.
+This master implementation plan details the full architecture and technical roadmap for expanding `rust-agent-core` into an autonomous, self-contained Rust AI Agent Engine and cross-platform CLI product.
 
 ---
 
@@ -20,24 +20,9 @@ This master implementation plan details the architecture and roadmap for expandi
 
 ---
 
-## Tool Suite Specification (Native Rust & REST APIs)
+## Master Roadmap & Technical Phases
 
-The Custom Agent Loop supports a comprehensive, native tool suite:
-
-1. **`list_documents`**: Returns the array of ingested filenames in `DocStore` (prevents vector search hallucinations when users ask for file metadata).
-2. **`search_documents`**: RAG vector similarity search over chunked document passages (`maxLength: 120` query constraint).
-3. **`web_search`**: Live internet queries via keyless DuckDuckGo HTML scraping or optional Tavily API (`TAVILY_API_KEY`).
-4. **`list_dir`**: Browse local project directories (`std::fs::read_dir`).
-5. **`read_file`**: Read text from specific files on disk (`std::fs::read_to_string`).
-6. **`write_file`**: Create or update local project files.
-7. **`run_command`**: Execute sandboxed terminal/bash commands (`tokio::process::Command`).
-8. **REST API Integrations**: Direct REST calls using `reqwest` for external cloud services (GitHub, Gmail, Notion).
-
----
-
-## Technical Roadmap & Technical Phases
-
-### Phase 1: Tool-Calling Stabilization & Qwen 3.6 27B Upgrade [COMPLETED]
+### Phase 1: Tool-Calling Stabilization & Groq Qwen 3.6 27B Upgrade [COMPLETED]
 - Set `temperature: 0.0` for deterministic parameter generation.
 - Added `maxLength: 120` to `search_documents` parameters schema.
 - Added `list_documents_tool()`, `web_search_tool()`, `Message::assistant()`, and exponential backoff retry loop in `src/llm.rs`.
@@ -54,18 +39,18 @@ The Custom Agent Loop supports a comprehensive, native tool suite:
 
 ---
 
-### Phase 4: Interactive Safety & Permission Guardrails [UPCOMING]
-#### [MODIFY] [src/main.rs](file:///home/anmol/Projects/rust-agent-core/src/main.rs) & [src/agent.rs](file:///home/anmol/Projects/rust-agent-core/src/agent.rs)
+### Phase 4: Interactive Safety & Permission Guardrails [CURRENT / ACTIVE]
+#### [MODIFY] [src/agent.rs](file:///home/anmol/Projects/rust-agent-core/src/agent.rs) & [src/main.rs](file:///home/anmol/Projects/rust-agent-core/src/main.rs)
 - **Execution Modes**:
-  - `--safe-mode` (default): Prompts user for interactive confirmation `[y/N]` before executing mutating tools (`run_command`, `write_file`).
-  - `--read-only`: Disables destructive file writes and terminal command execution for safe auditing.
-  - `--yolo`: Autonomous execution without interactive prompts.
+  - `--safe-mode` (default): Prompts user for interactive confirmation `[y/N]` on `stderr`/`stdin` before executing mutating tools (`run_command`, `write_file`).
+  - `--read-only`: Auditing mode that automatically blocks destructive file writes and shell execution.
+  - `--yolo`: Autonomous execution mode without interactive confirmation prompts.
 
 ---
 
 ### Phase 5: Hybrid Retrieval (BM25 Keyword + Vector RERANK) [UPCOMING]
 #### [MODIFY] [src/store.rs](file:///home/anmol/Projects/rust-agent-core/src/store.rs)
-- **BM25 Keyword Indexing**: Implement in-memory BM25 index alongside vector embeddings to catch exact code symbols (e.g. `cosine_similarity`, variable names, exact error codes).
+- **BM25 Keyword Indexing**: Implement in-memory BM25 tokenizer alongside vector embeddings to catch exact code symbols (e.g. `cosine_similarity`, variable names, exact error codes).
 - **Reciprocal Rank Fusion (RRF)**: Blend BM25 keyword ranks with Cosine Similarity vector ranks for state-of-the-art retrieval precision.
 
 ---
@@ -89,20 +74,20 @@ The Custom Agent Loop supports a comprehensive, native tool suite:
 ### Phase 8: Cross-Platform Packaging & Distribution [UPCOMING]
 #### [MODIFY] [Cargo.toml](file:///home/anmol/Projects/rust-agent-core/Cargo.toml) & GitHub Actions
 - **`cargo-dist` Integration**: Automate binary releases for Linux (x86_64, aarch64), macOS (Apple Silicon / Intel), and Windows.
-- **Package Managers**: Publish to Crates.io (`cargo install rust-agent-core`), Homebrew formula, and GitHub Releases tarballs.
+- **Package Managers**: Publish to Crates.io (`cargo install rust-agent-core`), Arch AUR (`PKGBUILD`), and GitHub Releases tarballs.
 
 ---
 
 ## Verification Plan
 
 ### Automated Tests
-- `cargo check`: Verify schema typing and crate linkage.
-- `cargo test`: Unit tests for sliding-window chunker, BM25 tokenizer, and binary vector serialization.
-- `cargo build --release`: Verify optimized single-binary compilation.
+- Run `cargo check` to verify schema typing and crate linkage.
+- Run `cargo build --release` to compile optimized single-binary release.
 
 ### Manual Verification
-- Test interactive REPL chat with multi-turn memory.
+- Test `--safe-mode` interactive prompt `[y/N]` when agent calls `run_command` or `write_file`.
+- Test `--read-only` flag blocking mutating tools with permission error.
+- Test `--yolo` flag executing tools autonomously without prompts.
 - Test document retrieval across mixed `.pdf`, `.csv`, `.md`, `.json`, and `.txt` files.
 - Test 0-second instant startup from `.vector_cache.bin`.
 - Test live web search queries.
-- Test file read/write and shell command execution.
