@@ -1,5 +1,5 @@
 [package]
-name = "rust-rag-agent"
+name = "rust-agent-core"
 version = "0.1.0"
 edition = "2021"
 
@@ -14,7 +14,7 @@ dotenvy = "0.15"
 
 
 [[bin]]
-name = "rust-rag-agent"
+name = "rust-agent-core"
 path = "src/main.rs"
 
 

@@ -2,7 +2,7 @@
 
 ## 1. Overview & Core Philosophy
 
-`rust-rag-agent` is a lightweight, high-performance, single-binary Autonomous AI Agent built in Rust.
+`rust-agent-core` is a lightweight, high-performance, single-binary Autonomous AI Agent built in Rust.
 
 ### Core Architectural Principles
 - **100% Single Binary Constraint**: Zero Docker containers, PostgreSQL, or external database daemons required.

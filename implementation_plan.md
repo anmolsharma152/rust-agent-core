@@ -1,6 +1,6 @@
 # Rust Agent Master Implementation Plan
 
-This master implementation plan details the architecture and roadmap for expanding `rust-rag-agent` into a fully autonomous, custom-built Rust AI Agent.
+This master implementation plan details the architecture and roadmap for expanding `rust-agent-core` into a fully autonomous, custom-built Rust AI Agent.
 
 ---
 
