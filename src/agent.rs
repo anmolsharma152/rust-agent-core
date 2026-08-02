@@ -10,16 +10,57 @@ use crate::store::DocStore;
 const MAX_TURNS: usize = 10;
 const SYSTEM_PROMPT: &str = "You are a helpful Autonomous AI Agent. Answer general questions directly, or use available tools (search_documents, list_documents, web_search, list_dir, read_file, write_file, run_command) when relevant.";
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExecutionMode {
+    Safe,
+    ReadOnly,
+    Yolo,
+}
+
 pub struct Agent {
     store: DocStore,
     embedder: Embedder,
     /// Tried in order for each new query: primary first (Groq), then fallbacks (OpenRouter, Gemini).
     providers: Vec<LlmClient>,
+    mode: ExecutionMode,
 }
 
 impl Agent {
-    pub fn new(store: DocStore, embedder: Embedder, providers: Vec<LlmClient>) -> Self {
-        Self { store, embedder, providers }
+    pub fn new(
+        store: DocStore,
+        embedder: Embedder,
+        providers: Vec<LlmClient>,
+        mode: ExecutionMode,
+    ) -> Self {
+        Self {
+            store,
+            embedder,
+            providers,
+            mode,
+        }
+    }
+
+    fn check_permission(&self, tool_name: &str, target_desc: &str) -> bool {
+        match self.mode {
+            ExecutionMode::Yolo => true,
+            ExecutionMode::ReadOnly => {
+                eprintln!("[permission] Tool '{tool_name}' blocked in --read-only mode.");
+                false
+            }
+            ExecutionMode::Safe => {
+                use std::io::Write;
+                eprint!("\n[safety] Agent requests tool '{tool_name}' (target: \"{target_desc}\")\nAllow execution? [y/N]: ");
+                std::io::stderr().flush().ok();
+
+                let mut input = String::new();
+                if std::io::stdin().read_line(&mut input).is_ok() {
+                    let trimmed = input.trim().to_lowercase();
+                    trimmed == "y" || trimmed == "yes"
+                } else {
+                    false
+                }
+            }
+        }
     }
 
     /// Runs one user query through the agent loop.
@@ -152,9 +193,13 @@ impl Agent {
                             .unwrap_or(serde_json::json!({}));
                         let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
                         let content = args.get("content").and_then(|v| v.as_str()).unwrap_or("");
-                        let result_text = match std::fs::write(path, content) {
-                            Ok(_) => format!("Successfully wrote content to '{path}'"),
-                            Err(e) => format!("write_file error: {e}"),
+                        let result_text = if !self.check_permission("write_file", path) {
+                            "Execution cancelled by user or permission denied.".to_string()
+                        } else {
+                            match std::fs::write(path, content) {
+                                Ok(_) => format!("Successfully wrote content to '{path}'"),
+                                Err(e) => format!("write_file error: {e}"),
+                            }
                         };
                         messages.push(Message::tool_result(call.id.clone(), result_text));
                     }
@@ -162,9 +207,13 @@ impl Agent {
                         let args: serde_json::Value = serde_json::from_str(&call.function.arguments)
                             .unwrap_or(serde_json::json!({}));
                         let cmd = args.get("command").and_then(|v| v.as_str()).unwrap_or("");
-                        let result_text = match execute_bash_command(cmd).await {
-                            Ok(out) => out,
-                            Err(e) => format!("run_command error: {e}"),
+                        let result_text = if !self.check_permission("run_command", cmd) {
+                            "Execution cancelled by user or permission denied.".to_string()
+                        } else {
+                            match execute_bash_command(cmd).await {
+                                Ok(out) => out,
+                                Err(e) => format!("run_command error: {e}"),
+                            }
                         };
                         messages.push(Message::tool_result(call.id.clone(), result_text));
                     }

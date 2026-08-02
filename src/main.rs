@@ -3,7 +3,7 @@ mod embeddings;
 mod llm;
 mod store;
 
-use agent::Agent;
+use agent::{Agent, ExecutionMode};
 use embeddings::Embedder;
 use llm::LlmClient;
 use store::DocStore;
@@ -11,6 +11,21 @@ use store::DocStore;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
+
+    let args: Vec<String> = std::env::args().collect();
+    let mode = if args.iter().any(|a| a == "--yolo") {
+        ExecutionMode::Yolo
+    } else if args.iter().any(|a| a == "--read-only") {
+        ExecutionMode::ReadOnly
+    } else {
+        ExecutionMode::Safe
+    };
+
+    match mode {
+        ExecutionMode::Safe => eprintln!("[safety] Mode: Safe (prompts [y/N] before running shell commands or modifying files)"),
+        ExecutionMode::ReadOnly => eprintln!("[safety] Mode: Read-Only (file writes and shell execution are disabled)"),
+        ExecutionMode::Yolo => eprintln!("[safety] Mode: Autonomous YOLO (all tools execute without confirmation)"),
+    }
 
     // 1. Load the local embedding model (downloads ~130MB from Hugging Face
     //    on first run, then caches it — no network needed after that).
@@ -44,7 +59,7 @@ async fn main() -> anyhow::Result<()> {
         return Err(anyhow::anyhow!("No API keys configured. Please set GROQ_API_KEY, OPENROUTER_API_KEY, or GEMINI_API_KEY in .env"));
     }
 
-    let agent = Agent::new(store, embedder, providers);
+    let agent = Agent::new(store, embedder, providers, mode);
 
     // 4. Simple REPL over stdin with multi-turn conversation memory.
     eprintln!("Ready. Type a question (Ctrl+D to exit).");
