@@ -1,0 +1,4 @@
+Project,Language,Performance,Target
+rust-agent-core,Rust,Sub-second LPU,Autonomous Agent Engine
+nano-gguf,C++,Zero Dependency,Edge LLM Tensor Engine
+mini-redis,Go,Low Memory,Distributed Cache Server

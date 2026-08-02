@@ -1,5 +1,5 @@
-/target
+target/
 .env
-.fastembed_cache
-*recovery*
+.vector_cache.bin
+.fastembed_cache/
 *.bin

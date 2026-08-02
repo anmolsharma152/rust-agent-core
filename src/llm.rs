@@ -106,9 +106,7 @@ pub fn list_documents_tool() -> ToolDef {
     }
 }
 
-#[allow(dead_code)]
 pub fn web_search_tool() -> ToolDef {
-
     ToolDef {
         kind: "function",
         function: FunctionDef {
@@ -129,6 +127,91 @@ pub fn web_search_tool() -> ToolDef {
         },
     }
 }
+
+pub fn list_dir_tool() -> ToolDef {
+    ToolDef {
+        kind: "function",
+        function: FunctionDef {
+            name: "list_dir".into(),
+            description: "List files and subdirectories in a local directory.".into(),
+            parameters: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Relative or absolute directory path (defaults to '.' if omitted)."
+                    }
+                },
+                "required": []
+            }),
+        },
+    }
+}
+
+pub fn read_file_tool() -> ToolDef {
+    ToolDef {
+        kind: "function",
+        function: FunctionDef {
+            name: "read_file".into(),
+            description: "Read text content of a file from disk.".into(),
+            parameters: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "File path to read."
+                    }
+                },
+                "required": ["path"]
+            }),
+        },
+    }
+}
+
+pub fn write_file_tool() -> ToolDef {
+    ToolDef {
+        kind: "function",
+        function: FunctionDef {
+            name: "write_file".into(),
+            description: "Create or overwrite a file on disk with specified content.".into(),
+            parameters: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Target file path."
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Text content to write."
+                    }
+                },
+                "required": ["path", "content"]
+            }),
+        },
+    }
+}
+
+pub fn run_command_tool() -> ToolDef {
+    ToolDef {
+        kind: "function",
+        function: FunctionDef {
+            name: "run_command".into(),
+            description: "Execute a bash command line on the local system.".into(),
+            parameters: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": "The exact shell command line string to execute."
+                    }
+                },
+                "required": ["command"]
+            }),
+        },
+    }
+}
+
 
 
 #[derive(Debug, Serialize)]

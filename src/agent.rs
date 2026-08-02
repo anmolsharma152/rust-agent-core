@@ -1,17 +1,19 @@
 use anyhow::{anyhow, Result};
 
 use crate::embeddings::Embedder;
-use crate::llm::{list_documents_tool, search_documents_tool, LlmClient, Message};
+use crate::llm::{
+    list_dir_tool, list_documents_tool, read_file_tool, run_command_tool, search_documents_tool,
+    web_search_tool, write_file_tool, LlmClient, Message,
+};
 use crate::store::DocStore;
 
-const MAX_TURNS: usize = 5;
-const SYSTEM_PROMPT: &str = "You are a helpful AI assistant. Answer general questions directly, or use tools when relevant.";
-
+const MAX_TURNS: usize = 10;
+const SYSTEM_PROMPT: &str = "You are a helpful Autonomous AI Agent. Answer general questions directly, or use available tools (search_documents, list_documents, web_search, list_dir, read_file, write_file, run_command) when relevant.";
 
 pub struct Agent {
     store: DocStore,
     embedder: Embedder,
-    /// Tried in order for each new query: primary first (Groq), then fallback (Ollama).
+    /// Tried in order for each new query: primary first (Groq), then fallbacks (OpenRouter, Gemini).
     providers: Vec<LlmClient>,
 }
 
@@ -20,14 +22,9 @@ impl Agent {
         Self { store, embedder, providers }
     }
 
-    /// Runs one user query through the agent loop. Tries each provider in
-    /// order, falling back to the next one only if the *first* call to a
-    /// provider fails (network error, auth error, rate limit, etc). This
-    /// keeps a single query's tool-calling turns on one model family rather
-    /// than mixing providers mid-conversation.
+    /// Runs one user query through the agent loop.
     #[allow(dead_code)]
     pub async fn ask(&self, user_query: &str) -> Result<String> {
-
         let mut history = vec![Message::system(SYSTEM_PROMPT)];
         self.ask_chat(&mut history, user_query).await
     }
@@ -64,7 +61,15 @@ impl Agent {
     }
 
     async fn run_loop(&self, provider: &LlmClient, messages: &mut Vec<Message>) -> Result<String> {
-        let tools = [search_documents_tool(), list_documents_tool()];
+        let tools = [
+            search_documents_tool(),
+            list_documents_tool(),
+            web_search_tool(),
+            list_dir_tool(),
+            read_file_tool(),
+            write_file_tool(),
+            run_command_tool(),
+        ];
 
         for turn in 0..MAX_TURNS {
             if turn > 0 {
@@ -72,8 +77,6 @@ impl Agent {
                 tokio::time::sleep(std::time::Duration::from_millis(250)).await;
             }
             let reply = provider.chat(messages, Some(&tools)).await?;
-
-
 
             let tool_calls = reply.tool_calls.as_deref().unwrap_or(&[]);
             if tool_calls.is_empty() {
@@ -89,7 +92,6 @@ impl Agent {
             messages.push(reply.clone());
 
             for call in tool_calls {
-
                 match call.function.name.as_str() {
                     "list_documents" => {
                         let titles = self.store.get_document_titles();
@@ -103,7 +105,7 @@ impl Agent {
                     "search_documents" => {
                         let args: serde_json::Value = serde_json::from_str(&call.function.arguments)
                             .unwrap_or(serde_json::json!({}));
-                        let query = args.get("query").and_then(|v| v.as_str()).unwrap_or(user_query_fallback(&messages));
+                        let query = args.get("query").and_then(|v| v.as_str()).unwrap_or(user_query_fallback(messages));
                         let top_k = args
                             .get("top_k")
                             .and_then(|v| v.as_u64().or_else(|| v.as_str().and_then(|s| s.parse().ok())))
@@ -115,48 +117,183 @@ impl Agent {
                         };
                         messages.push(Message::tool_result(call.id.clone(), result_text));
                     }
+                    "web_search" => {
+                        let args: serde_json::Value = serde_json::from_str(&call.function.arguments)
+                            .unwrap_or(serde_json::json!({}));
+                        let query = args.get("query").and_then(|v| v.as_str()).unwrap_or("");
+                        let result_text = match execute_web_search(query).await {
+                            Ok(res) => res,
+                            Err(e) => format!("web_search error: {e}"),
+                        };
+                        messages.push(Message::tool_result(call.id.clone(), result_text));
+                    }
+                    "list_dir" => {
+                        let args: serde_json::Value = serde_json::from_str(&call.function.arguments)
+                            .unwrap_or(serde_json::json!({}));
+                        let path = args.get("path").and_then(|v| v.as_str()).unwrap_or(".");
+                        let result_text = match execute_list_dir(path) {
+                            Ok(res) => res,
+                            Err(e) => format!("list_dir error: {e}"),
+                        };
+                        messages.push(Message::tool_result(call.id.clone(), result_text));
+                    }
+                    "read_file" => {
+                        let args: serde_json::Value = serde_json::from_str(&call.function.arguments)
+                            .unwrap_or(serde_json::json!({}));
+                        let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
+                        let result_text = match std::fs::read_to_string(path) {
+                            Ok(content) => content,
+                            Err(e) => format!("read_file error: {e}"),
+                        };
+                        messages.push(Message::tool_result(call.id.clone(), result_text));
+                    }
+                    "write_file" => {
+                        let args: serde_json::Value = serde_json::from_str(&call.function.arguments)
+                            .unwrap_or(serde_json::json!({}));
+                        let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
+                        let content = args.get("content").and_then(|v| v.as_str()).unwrap_or("");
+                        let result_text = match std::fs::write(path, content) {
+                            Ok(_) => format!("Successfully wrote content to '{path}'"),
+                            Err(e) => format!("write_file error: {e}"),
+                        };
+                        messages.push(Message::tool_result(call.id.clone(), result_text));
+                    }
+                    "run_command" => {
+                        let args: serde_json::Value = serde_json::from_str(&call.function.arguments)
+                            .unwrap_or(serde_json::json!({}));
+                        let cmd = args.get("command").and_then(|v| v.as_str()).unwrap_or("");
+                        let result_text = match execute_bash_command(cmd).await {
+                            Ok(out) => out,
+                            Err(e) => format!("run_command error: {e}"),
+                        };
+                        messages.push(Message::tool_result(call.id.clone(), result_text));
+                    }
                     _ => {
                         messages.push(Message::tool_result(
                             call.id.clone(),
                             format!("error: unknown tool '{}'", call.function.name),
                         ));
                     }
-
                 }
             }
         }
 
-
         Err(anyhow!("hit MAX_TURNS ({MAX_TURNS}) without a final answer"))
     }
 
-    /// Blocking embedding + similarity search. For a single-user CLI this is
-    /// fine to run inline; a server handling concurrent requests should run
-    /// this via `tokio::task::spawn_blocking` instead so it doesn't stall
-    /// other requests on the same worker thread.
     fn retrieve(&self, query: &str, top_k: usize) -> Result<String> {
         let query_embedding = self.embedder.embed_query(query)?;
         let hits = self.store.search(&query_embedding, top_k);
 
         if hits.is_empty() {
-            return Ok("No documents found.".to_string());
+            return Ok("No relevant passages found in the local document store.".into());
         }
 
-        let formatted = hits
-            .iter()
-            .map(|(doc, score)| format!("[{} | score={:.3}]\n{}", doc.source, score, doc.text))
-            .collect::<Vec<_>>()
-            .join("\n\n---\n\n");
-        Ok(formatted)
+        let mut out = String::new();
+        for (i, (doc, score)) in hits.iter().enumerate() {
+            out.push_str(&format!(
+                "--- Passage {} from {} (chunk #{}, relevance: {:.2}) ---\n{}\n\n",
+                i + 1,
+                doc.source,
+                doc.chunk_index,
+                score,
+                doc.text
+            ));
+        }
+        Ok(out)
     }
 }
 
-/// Best-effort fallback if the model calls the tool without a `query` field —
-/// just reuse the original user message so retrieval still does something sane.
 fn user_query_fallback(messages: &[Message]) -> &str {
     messages
         .iter()
+        .rev()
         .find(|m| m.role == "user")
         .and_then(|m| m.content.as_deref())
         .unwrap_or("")
+}
+
+fn execute_list_dir(path_str: &str) -> Result<String> {
+    let entries = std::fs::read_dir(path_str)?;
+    let mut items = Vec::new();
+    for entry in entries {
+        let entry = entry?;
+        let filename = entry.file_name().to_string_lossy().to_string();
+        let is_dir = entry.file_type()?.is_dir();
+        items.push(format!("{}{}", filename, if is_dir { "/" } else { "" }));
+    }
+    items.sort();
+    Ok(if items.is_empty() {
+        "Directory is empty.".to_string()
+    } else {
+        items.join("\n")
+    })
+}
+
+async fn execute_bash_command(cmd_str: &str) -> Result<String> {
+    let output = tokio::process::Command::new("sh")
+        .arg("-c")
+        .arg(cmd_str)
+        .output()
+        .await?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let combined = format!("{stdout}\n{stderr}").trim().to_string();
+    Ok(if combined.is_empty() {
+        "Command executed successfully (no output).".to_string()
+    } else {
+        combined
+    })
+}
+
+async fn execute_web_search(query: &str) -> Result<String> {
+    if let Ok(tavily_key) = std::env::var("TAVILY_API_KEY") {
+        let client = reqwest::Client::new();
+        let body = serde_json::json!({
+            "api_key": tavily_key,
+            "query": query,
+            "search_depth": "basic",
+            "include_answer": true,
+            "max_results": 5
+        });
+        let resp = client.post("https://api.tavily.com/search").json(&body).send().await?;
+        if resp.status().is_success() {
+            let json: serde_json::Value = resp.json().await?;
+            if let Some(answer) = json.get("answer").and_then(|a| a.as_str()) {
+                if !answer.trim().is_empty() {
+                    return Ok(format!("Web Search Answer:\n{answer}"));
+                }
+            }
+            if let Some(results) = json.get("results").and_then(|r| r.as_array()) {
+                let mut snippets = Vec::new();
+                for r in results.iter().take(3) {
+                    let title = r.get("title").and_then(|t| t.as_str()).unwrap_or("");
+                    let snippet = r.get("content").and_then(|c| c.as_str()).unwrap_or("");
+                    snippets.push(format!("- **{title}**: {snippet}"));
+                }
+                if !snippets.is_empty() {
+                    return Ok(format!("Web Search Results:\n{}", snippets.join("\n")));
+                }
+            }
+        }
+    }
+
+    // Fallback: DDG search query
+    let client = reqwest::Client::builder()
+        .user_agent("Mozilla/5.0 (X11; Linux x86_64)")
+        .timeout(std::time::Duration::from_secs(10))
+        .build()?;
+    let url = format!("https://html.duckduckgo.com/html/?q={}", query);
+    let text = client.get(&url).send().await?.text().await?;
+    
+    // Extract readable text lines
+    let lines: Vec<&str> = text
+        .lines()
+        .map(|l| l.trim())
+        .filter(|l| !l.is_empty() && !l.starts_with('<') && !l.starts_with('{'))
+        .take(15)
+        .collect();
+
+    Ok(format!("Web search results for '{query}':\n{}", lines.join("\n")))
 }

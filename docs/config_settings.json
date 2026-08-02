@@ -1,0 +1,8 @@
+{
+  "agent_name": "rust-agent-core",
+  "version": "0.1.0",
+  "primary_provider": "Groq LPU",
+  "supported_formats": [".txt", ".md", ".pdf", ".csv", ".json"],
+  "chunk_size_words": 300,
+  "overlap_words": 50
+}
