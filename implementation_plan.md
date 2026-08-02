@@ -1,90 +1,108 @@
-# Rust Agent Master Implementation Plan
+# Rust Agent Core Master Implementation Plan
 
-This master implementation plan details the architecture and roadmap for expanding `rust-agent-core` into a fully autonomous, custom-built Rust AI Agent.
+This master implementation plan details the architecture and roadmap for expanding `rust-agent-core` into a fully autonomous, custom-built Rust AI Agent Engine and cross-platform CLI tool.
 
 ---
 
 ## Architectural Decision Summary
 
 > [!IMPORTANT]
-> **Custom Agent Loop (No `rig-core`)**: The system will use a custom-built, lightweight async agent loop in `src/agent.rs`. Third-party frameworks like `rig-core` are excluded to maintain 100% fine-grained control and zero framework overhead.
+> **Custom Agent Loop (No `rig-core`)**: The system uses a custom-built, lightweight async agent loop in `src/agent.rs`. Third-party frameworks like `rig-core` are excluded to maintain 100% fine-grained control and zero framework overhead.
 
 > [!IMPORTANT]
-> **No MCP Servers Needed**: The agent will NOT use Model Context Protocol (MCP) servers or IPC subprocesses. All tools (web search, document search, system commands, API integrations) will be implemented as native Rust functions (`ToolDef` schemas in `src/llm.rs`) or called via direct REST APIs.
+> **No MCP Servers Needed**: The agent does NOT use Model Context Protocol (MCP) servers or IPC subprocesses. All tools (web search, document search, system commands, file I/O) are implemented as native Rust functions (`ToolDef` schemas in `src/llm.rs`) or called via direct REST APIs.
 
 > [!NOTE]
 > **Single Binary Execution**: The application strictly remains a 100% self-contained single Rust binary. External database daemons (Qdrant, PostgreSQL, Milvus, Docker) are excluded.
 
 > [!TIP]
-> **Recommended LLM Engine (Qwen 2.5)**: Default model set to `llama-3.3-70b-versatile` or `llama-3.3-70b-versatile` on Groq to eliminate Llama 3.3 raw tag syntax corruptions (`<function=...`) and tool over-triggering.
+> **Fast LPU Engine (Qwen 3.6 27B on Groq)**: Default model set to `qwen/qwen3.6-27b` on Groq with OpenRouter and Gemini fallbacks for native token-level function calling, zero raw XML syntax corruption, sub-second response times, and exponential backoff retry handling.
 
 ---
 
 ## Tool Suite Specification (Native Rust & REST APIs)
 
-The Custom Agent Loop will support a comprehensive, native tool suite:
+The Custom Agent Loop supports a comprehensive, native tool suite:
 
 1. **`list_documents`**: Returns the array of ingested filenames in `DocStore` (prevents vector search hallucinations when users ask for file metadata).
 2. **`search_documents`**: RAG vector similarity search over chunked document passages (`maxLength: 120` query constraint).
-3. **`web_search`**: Live internet queries via Tavily API or Brave Search API.
+3. **`web_search`**: Live internet queries via keyless DuckDuckGo HTML scraping or optional Tavily API (`TAVILY_API_KEY`).
 4. **`list_dir`**: Browse local project directories (`std::fs::read_dir`).
 5. **`read_file`**: Read text from specific files on disk (`std::fs::read_to_string`).
 6. **`write_file`**: Create or update local project files.
 7. **`run_command`**: Execute sandboxed terminal/bash commands (`tokio::process::Command`).
-8. **REST API Integrations (Composio / Cloud APIs)**: Direct REST calls using `reqwest` for external services (Gmail, GitHub, Notion) without MCP server subprocesses.
+8. **REST API Integrations**: Direct REST calls using `reqwest` for external cloud services (GitHub, Gmail, Notion).
 
 ---
 
-## Technical Roadmap & Proposed Changes
+## Technical Roadmap & Technical Phases
 
-### Phase 1: Tool-Calling Stabilization & Qwen 2.5 Upgrade
+### Phase 1: Tool-Calling Stabilization & Qwen 3.6 27B Upgrade [COMPLETED]
+- Set `temperature: 0.0` for deterministic parameter generation.
+- Added `maxLength: 120` to `search_documents` parameters schema.
+- Added `list_documents_tool()`, `web_search_tool()`, `Message::assistant()`, and exponential backoff retry loop in `src/llm.rs`.
+- Configured Groq (`qwen/qwen3.6-27b`) as primary provider with OpenRouter and Gemini fallbacks in `src/main.rs`.
+- Multi-turn conversation memory maintained across REPL interactions in `src/agent.rs`.
 
-#### [MODIFY] [llm.rs](file:///home/anmol/Projects/rust-rag-agent/src/llm.rs)
-- **Fix Syntax Corruption**: Set `temperature: 0.0` for deterministic parameter generation.
-- **Query Length Constraints**: Add `maxLength: 120` to `search_documents` parameters schema.
-- **Add `list_documents_tool()`**: Dedicated tool schema returning ingested filenames.
-- **Add `web_search_tool()`**: Tool schema for Tavily/Brave live web search.
+### Phase 2: Multi-Format Ingestion, Sliding-Window Chunking & Disk Vector Cache [COMPLETED]
+- Multi-format file parsing added for `.txt`, `.md` (Markdown), `.pdf` (PDF pages), `.csv` (Row-to-text key-values), and `.json` files.
+- Sliding-window text chunker (300 words with 50-word sliding overlap) implemented in `src/store.rs`.
+- Binary disk vector cache (`.vector_cache.bin`) using SHA-256 file checksums implemented in `src/store.rs` for 0-second instant startup.
 
-#### [MODIFY] [agent.rs](file:///home/anmol/Projects/rust-rag-agent/src/agent.rs)
-- **Clean System Prompt**: Remove manual tool syntax text from `SYSTEM_PROMPT` to prevent double-prompting tag corruption.
-- **Multi-Tool Dispatcher**: Handle `list_documents`, `search_documents`, `web_search`, and file system tools inside the custom `run_loop`.
-
-#### [MODIFY] [.env](file:///home/anmol/Projects/rust-rag-agent/.env)
-- Set default model to `GROQ_MODEL=qwen-2.5-coder-32b` for top-tier function calling precision.
-
----
-
-### Phase 2: Multi-Format Ingestion & Sliding-Window Chunking
-
-#### [MODIFY] [Cargo.toml](file:///home/anmol/Projects/rust-rag-agent/Cargo.toml)
-Add lightweight parsing crates:
-- `pdf-extract` for PDF page text extraction.
-- `csv` for tabular row-to-text formatting (`Header: Value`).
-- `pulldown-cmark` for Markdown parsing.
-
-#### [MODIFY] [store.rs](file:///home/anmol/Projects/rust-rag-agent/src/store.rs)
-- **Multi-Format Loader**: Parse `.txt`, `.md`, `.pdf`, `.csv`, and `.json` files in `./docs/`.
-- **Sliding-Window Chunker**: Split long documents into 300–400 word passages with 50-word sliding overlap.
-- **Binary Disk Cache**: Implement `./docs/.vector_cache.bin` storing SHA-256 checksums and pre-computed vectors for instant startup without re-embedding.
+### Phase 3: System & Web Tool Expansion [COMPLETED]
+- Implemented `list_dir`, `read_file`, `write_file`, sandboxed `run_command`, and keyless/API `web_search` tools in `src/agent.rs`.
 
 ---
 
-### Phase 3: System & API Tool Expansion
+### Phase 4: Interactive Safety & Permission Guardrails [UPCOMING]
+#### [MODIFY] [src/main.rs](file:///home/anmol/Projects/rust-agent-core/src/main.rs) & [src/agent.rs](file:///home/anmol/Projects/rust-agent-core/src/agent.rs)
+- **Execution Modes**:
+  - `--safe-mode` (default): Prompts user for interactive confirmation `[y/N]` before executing mutating tools (`run_command`, `write_file`).
+  - `--read-only`: Disables destructive file writes and terminal command execution for safe auditing.
+  - `--yolo`: Autonomous execution without interactive prompts.
 
-#### [MODIFY] [src/agent.rs](file:///home/anmol/Projects/rust-rag-agent/src/agent.rs) & [src/llm.rs](file:///home/anmol/Projects/rust-rag-agent/src/llm.rs)
-- Implement `list_dir`, `read_file`, `write_file`, and sandboxed `run_command` tools.
-- Add REST client for external cloud service integrations (Composio / GitHub / Gmail REST endpoints).
+---
+
+### Phase 5: Hybrid Retrieval (BM25 Keyword + Vector RERANK) [UPCOMING]
+#### [MODIFY] [src/store.rs](file:///home/anmol/Projects/rust-agent-core/src/store.rs)
+- **BM25 Keyword Indexing**: Implement in-memory BM25 index alongside vector embeddings to catch exact code symbols (e.g. `cosine_similarity`, variable names, exact error codes).
+- **Reciprocal Rank Fusion (RRF)**: Blend BM25 keyword ranks with Cosine Similarity vector ranks for state-of-the-art retrieval precision.
+
+---
+
+### Phase 6: Session Persistence & Memory Checkpoints [UPCOMING]
+#### [NEW] [src/session.rs](file:///home/anmol/Projects/rust-agent-core/src/session.rs)
+- **Session Checkpoints**: Save conversation `Vec<Message>` state to `~/.config/rust-agent-core/sessions/<session_id>.json`.
+- **CLI Commands**:
+  - `rust-agent-core --resume <session_id>`: Restores conversation history.
+  - `rust-agent-core --list-sessions`: Displays saved conversation checkpoints.
+
+---
+
+### Phase 7: Async Sub-Agent Worker Swarms (`spawn_subagent`) [UPCOMING]
+#### [MODIFY] [src/agent.rs](file:///home/anmol/Projects/rust-agent-core/src/agent.rs)
+- **Sub-Agent Delegation**: Add `spawn_subagent` function schema allowing the main agent loop to spawn background worker tasks via `tokio::spawn` and `tokio::sync::mpsc` channels.
+- **Parallel Work**: Concurrently execute web searches, document retrievals, and shell commands in parallel worker tasks.
+
+---
+
+### Phase 8: Cross-Platform Packaging & Distribution [UPCOMING]
+#### [MODIFY] [Cargo.toml](file:///home/anmol/Projects/rust-agent-core/Cargo.toml) & GitHub Actions
+- **`cargo-dist` Integration**: Automate binary releases for Linux (x86_64, aarch64), macOS (Apple Silicon / Intel), and Windows.
+- **Package Managers**: Publish to Crates.io (`cargo install rust-agent-core`), Homebrew formula, and GitHub Releases tarballs.
 
 ---
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `cargo check` to verify schema typing and crate linkage.
-- Run `cargo build --release` to verify single-binary compilation.
+- `cargo check`: Verify schema typing and crate linkage.
+- `cargo test`: Unit tests for sliding-window chunker, BM25 tokenizer, and binary vector serialization.
+- `cargo build --release`: Verify optimized single-binary compilation.
 
 ### Manual Verification
-- Test `list_documents` query in CLI REPL.
-- Test queries asking for general world facts to verify Qwen answers directly without over-triggering tools.
-- Test web search queries using live Tavily / Brave API calls.
-- Test loading mixed `.pdf`, `.csv`, `.md`, and `.txt` files from `./docs/`.
+- Test interactive REPL chat with multi-turn memory.
+- Test document retrieval across mixed `.pdf`, `.csv`, `.md`, `.json`, and `.txt` files.
+- Test 0-second instant startup from `.vector_cache.bin`.
+- Test live web search queries.
+- Test file read/write and shell command execution.
