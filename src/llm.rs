@@ -22,6 +22,10 @@ impl Message {
     pub fn user(text: impl Into<String>) -> Self {
         Self { role: "user".into(), content: Some(text.into()), tool_calls: None, tool_call_id: None }
     }
+    pub fn assistant(text: impl Into<String>) -> Self {
+        Self { role: "assistant".into(), content: Some(text.into()), tool_calls: None, tool_call_id: None }
+    }
+
     pub fn tool_result(tool_call_id: impl Into<String>, text: impl Into<String>) -> Self {
         Self {
             role: "tool".into(),
@@ -75,15 +79,57 @@ pub fn search_documents_tool() -> ToolDef {
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "The search query, e.g. the user's question or a key phrase from it."
+                        "description": "Short search keywords (max 100 characters).",
+                        "maxLength": 100
                     }
                 },
                 "required": ["query"]
             }),
-
         },
     }
 }
+
+pub fn list_documents_tool() -> ToolDef {
+    ToolDef {
+        kind: "function",
+        function: FunctionDef {
+            name: "list_documents".into(),
+            description: "List all filenames currently indexed in the local document store. \
+                           Use this whenever the user asks what documents are embedded or available."
+                .into(),
+            parameters: serde_json::json!({
+                "type": "object",
+                "properties": {},
+                "required": []
+            }),
+        },
+    }
+}
+
+#[allow(dead_code)]
+pub fn web_search_tool() -> ToolDef {
+
+    ToolDef {
+        kind: "function",
+        function: FunctionDef {
+            name: "web_search".into(),
+            description: "Search the live web for recent events, news, or real-time information."
+                .into(),
+            parameters: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Short web search keywords (max 100 characters).",
+                        "maxLength": 100
+                    }
+                },
+                "required": ["query"]
+            }),
+        },
+    }
+}
+
 
 #[derive(Debug, Serialize)]
 struct ChatRequest<'a> {
@@ -130,6 +176,36 @@ impl LlmClient {
         })
     }
 
+    pub fn openrouter(model: impl Into<String>) -> Result<Self> {
+        let api_key = std::env::var("OPENROUTER_API_KEY")
+            .map_err(|_| anyhow!("OPENROUTER_API_KEY is not set"))?;
+        Ok(Self {
+            name: "openrouter",
+            base_url: "https://openrouter.ai/api/v1".into(),
+            api_key: Some(api_key),
+            model: model.into(),
+            http: reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(30))
+                .build()?,
+        })
+    }
+
+    pub fn gemini(model: impl Into<String>) -> Result<Self> {
+        let api_key = std::env::var("GEMINI_API_KEY")
+            .map_err(|_| anyhow!("GEMINI_API_KEY is not set"))?;
+        Ok(Self {
+            name: "gemini",
+            base_url: "https://generativelanguage.googleapis.com/v1beta/openai".into(),
+            api_key: Some(api_key),
+            model: model.into(),
+            http: reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(30))
+                .build()?,
+        })
+    }
+
+
+    #[allow(dead_code)]
     pub fn ollama(model: impl Into<String>) -> Self {
         Self {
             name: "ollama",
@@ -137,8 +213,6 @@ impl LlmClient {
                 .unwrap_or_else(|_| "http://localhost:11434/v1".into()),
             api_key: None,
             model: model.into(),
-            // Ollama runs on-machine, but local inference can still be slow
-            // on CPU-only hardware, so give it much more headroom than Groq.
             http: reqwest::Client::builder()
                 .timeout(std::time::Duration::from_secs(120))
                 .build().unwrap(),
@@ -149,29 +223,68 @@ impl LlmClient {
         let url = format!("{}/chat/completions", self.base_url);
         let body = ChatRequest { model: &self.model, messages, tools, temperature: 0.0 };
 
+        let max_retries = 3;
+        let mut last_error = anyhow!("Unknown API error");
 
-        let mut req = self.http.post(&url).json(&body);
-        if let Some(key) = &self.api_key {
-            req = req.bearer_auth(key);
-        }
+        for attempt in 0..=max_retries {
+            let mut req = self.http.post(&url).json(&body);
+            if let Some(key) = &self.api_key {
+                req = req.bearer_auth(key);
+            }
 
-        let resp = req.send().await.map_err(|e| anyhow!("[{}] request failed: {e}", self.name))?;
-        let status = resp.status();
-        if !status.is_success() {
+            let resp = match req.send().await {
+                Ok(r) => r,
+                Err(e) => {
+                    last_error = anyhow!("[{}] request failed: {e}", self.name);
+                    if attempt < max_retries {
+                        let backoff_secs = 1 << attempt;
+                        eprintln!("[{}] Network error ({e}) — retrying in {backoff_secs}s...", self.name);
+                        tokio::time::sleep(std::time::Duration::from_secs(backoff_secs)).await;
+                        continue;
+                    }
+                    return Err(last_error);
+                }
+            };
+
+            let status = resp.status();
+
+            if status.is_success() {
+                let parsed: ChatResponse = resp
+                    .json()
+                    .await
+                    .map_err(|e| anyhow!("[{}] failed to parse response: {e}", self.name))?;
+
+                return parsed
+                    .choices
+                    .into_iter()
+                    .next()
+                    .map(|c| c.message)
+                    .ok_or_else(|| anyhow!("[{}] empty choices in response", self.name));
+            }
+
+            // Handle Rate Limiting (429) or Service Unavailable (503/502/504) with Backoff
+            if (status.as_u16() == 429 || status.is_server_error()) && attempt < max_retries {
+                let retry_after_header = resp
+                    .headers()
+                    .get("retry-after")
+                    .and_then(|h| h.to_str().ok())
+                    .and_then(|s| s.parse::<u64>().ok());
+
+                let wait_secs = retry_after_header.unwrap_or(1 << attempt);
+                let text = resp.text().await.unwrap_or_default();
+                eprintln!(
+                    "[{}] HTTP {status} (rate limited/server busy) — retrying in {wait_secs}s... (details: {text})",
+                    self.name
+                );
+                tokio::time::sleep(std::time::Duration::from_secs(wait_secs)).await;
+                continue;
+            }
+
             let text = resp.text().await.unwrap_or_default();
             return Err(anyhow!("[{}] HTTP {status}: {text}", self.name));
         }
 
-        let parsed: ChatResponse = resp
-            .json()
-            .await
-            .map_err(|e| anyhow!("[{}] failed to parse response: {e}", self.name))?;
-
-        parsed
-            .choices
-            .into_iter()
-            .next()
-            .map(|c| c.message)
-            .ok_or_else(|| anyhow!("[{}] empty choices in response", self.name))
+        Err(last_error)
     }
 }
+
