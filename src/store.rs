@@ -58,7 +58,15 @@ impl DocStore {
         scored.truncate(top_k);
         scored
     }
+
+    pub fn get_document_titles(&self) -> Vec<String> {
+        let mut titles: Vec<String> = self.docs.iter().map(|d| d.source.clone()).collect();
+        titles.sort();
+        titles.dedup();
+        titles
+    }
 }
+
 
 fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
     let dot: f32 = a.iter().zip(b).map(|(x, y)| x * y).sum();
