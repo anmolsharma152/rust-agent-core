@@ -107,7 +107,13 @@ This comprehensive master implementation plan details the architecture and roadm
 - `cargo build --release`: Verify single-binary compilation.
 
 ### Manual Verification
-- Test `exit`/`quit` command interceptor in REPL.
+- Test `--safe-mode` interactive prompt `[y/N]` when agent calls `run_command` or `write_file`.
+- Test `--read-only` flag blocking mutating tools with permission error.
+- Test `--yolo` flag executing tools autonomously without prompts.
+- Test document retrieval across mixed `.pdf`, `.csv`, `.md`, `.json`, and `.txt` files.
+- Test 0-second instant startup from `.vector_cache.bin`.
+- Test live web search queries.
+- Test `exit`, `quit`, and `:q` command interceptors in REPL.
 - Test 10+ turn conversation to verify token usage stays under 1,500 tokens (Groq 8k TPM limit never hit).
 - Test long-term memory recall ("what is my name?").
 - Test hybrid RRF keyword search for exact code symbol queries.
