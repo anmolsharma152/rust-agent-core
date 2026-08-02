@@ -1,6 +1,6 @@
-# Rust Agent Core Master Implementation Plan
+# Comprehensive Master Implementation Plan: `rust-agent-core`
 
-This master implementation plan details the full architecture and technical roadmap for expanding `rust-agent-core` into an autonomous, self-contained Rust AI Agent Engine and cross-platform CLI product.
+This comprehensive master implementation plan details the architecture and roadmap for expanding `rust-agent-core` into an autonomous, self-contained AI Agent Engine and cross-platform CLI tool with dual-layer memory, hybrid RRF search, observability, and zero-dependency packaging.
 
 ---
 
@@ -20,14 +20,13 @@ This master implementation plan details the full architecture and technical road
 
 ---
 
-## Master Roadmap & Technical Phases
+## Completed Phases
 
 ### Phase 1: Tool-Calling Stabilization & Groq Qwen 3.6 27B Upgrade [COMPLETED]
 - Set `temperature: 0.0` for deterministic parameter generation.
 - Added `maxLength: 120` to `search_documents` parameters schema.
 - Added `list_documents_tool()`, `web_search_tool()`, `Message::assistant()`, and exponential backoff retry loop in `src/llm.rs`.
 - Configured Groq (`qwen/qwen3.6-27b`) as primary provider with OpenRouter and Gemini fallbacks in `src/main.rs`.
-- Multi-turn conversation memory maintained across REPL interactions in `src/agent.rs`.
 
 ### Phase 2: Multi-Format Ingestion, Sliding-Window Chunking & Disk Vector Cache [COMPLETED]
 - Multi-format file parsing added for `.txt`, `.md` (Markdown), `.pdf` (PDF pages), `.csv` (Row-to-text key-values), and `.json` files.
@@ -37,57 +36,79 @@ This master implementation plan details the full architecture and technical road
 ### Phase 3: System & Web Tool Expansion [COMPLETED]
 - Implemented `list_dir`, `read_file`, `write_file`, sandboxed `run_command`, and keyless/API `web_search` tools in `src/agent.rs`.
 
----
-
-### Phase 4: Interactive Safety & Permission Guardrails [CURRENT / ACTIVE]
-#### [MODIFY] [src/agent.rs](file:///home/anmol/Projects/rust-agent-core/src/agent.rs) & [src/main.rs](file:///home/anmol/Projects/rust-agent-core/src/main.rs)
-- **Execution Modes**:
-  - `--safe-mode` (default): Prompts user for interactive confirmation `[y/N]` on `stderr`/`stdin` before executing mutating tools (`run_command`, `write_file`).
-  - `--read-only`: Auditing mode that automatically blocks destructive file writes and shell execution.
-  - `--yolo`: Autonomous execution mode without interactive confirmation prompts.
+### Phase 4: Interactive Safety Guardrails [COMPLETED]
+- Implemented `ExecutionMode` enum (`Safe`, `ReadOnly`, `Yolo`).
+- `--safe-mode` (default): Prompts `[y/N]` before executing shell commands or writing files.
+- `--read-only`: Auditing mode blocking destructive operations.
+- `--yolo`: Fully autonomous execution mode.
 
 ---
 
-### Phase 5: Hybrid Retrieval (BM25 Keyword + Vector RERANK) [UPCOMING]
+## Upcoming Technical Phases
+
+### Phase 5: REPL UX & Command Interceptors [CURRENT / ACTIVE]
+#### [MODIFY] [src/main.rs](file:///home/anmol/Projects/rust-agent-core/src/main.rs)
+- **Built-in CLI Commands**: Intercept `exit`, `quit`, `:q`, `help`, and `clear` commands directly in the REPL loop without triggering network LLM API calls.
+- **Graceful Termination**: Print `Goodbye!` and cleanly break stdin loop immediately.
+
+---
+
+### Phase 6: Dual-Layer Agent Memory & Token Budgeting [HIGH PRIORITY]
+#### [NEW] [src/memory.rs](file:///home/anmol/Projects/rust-agent-core/src/memory.rs)
+- **Short-Term Sliding Window Buffer**: Maintain active window of last 4–6 turns (~1,200 token budget) to prevent hitting Groq 8,000 TPM Free Tier rate limits.
+- **Fact Extraction & Summarization**: When turns slide out of short-term window, extract key facts (e.g. *"User's name is Anmol"*).
+- **Long-Term Memory Store (`.memory_cache.bin`)**: Embed extracted facts into a dedicated memory vector index saved to disk.
+- **Semantic Memory Recall**: Perform local vector search over past facts before LLM invocation and inject top-relevant facts (~100 tokens) into system prompt.
+
+---
+
+### Phase 7: Hybrid Retrieval (BM25 + Vector RERANK via RRF) [HIGH PRIORITY]
 #### [MODIFY] [src/store.rs](file:///home/anmol/Projects/rust-agent-core/src/store.rs)
-- **BM25 Keyword Indexing**: Implement in-memory BM25 tokenizer alongside vector embeddings to catch exact code symbols (e.g. `cosine_similarity`, variable names, exact error codes).
-- **Reciprocal Rank Fusion (RRF)**: Blend BM25 keyword ranks with Cosine Similarity vector ranks for state-of-the-art retrieval precision.
+- **BM25 Tokenizer & Keyword Index**: Build in-memory BM25 index alongside vector embeddings to catch exact code symbols (e.g. `check_permission`, `cosine_similarity`).
+- **Reciprocal Rank Fusion (RRF)**: Implement RRF algorithm combining BM25 keyword ranks and vector similarity ranks:
+  $$\text{RRF\_Score}(d) = \frac{1}{60 + \text{Rank}_{\text{BM25}}(d)} + \frac{1}{60 + \text{Rank}_{\text{Vector}}(d)}$$
 
 ---
 
-### Phase 6: Session Persistence & Memory Checkpoints [UPCOMING]
+### Phase 8: Telemetry, Observability & Secret Masking
+#### [MODIFY] [src/main.rs](file:///home/anmol/Projects/rust-agent-core/src/main.rs) & [src/agent.rs](file:///home/anmol/Projects/rust-agent-core/src/agent.rs)
+- **`--verbose` Mode**: Display turn latency (ms), active LLM provider, tokens used / TPM percentage, and memory recall metrics after every turn.
+- **Secret & Key Masking**: Automatically redact API keys (`GROQ_API_KEY`, AWS tokens, SSH keys) from logs and output text.
+- **Path Boundary Enforcer**: Restrict file read/write operations to safe directory bounds.
+
+---
+
+### Phase 9: Session Persistence & Checkpoints (`--resume`)
 #### [NEW] [src/session.rs](file:///home/anmol/Projects/rust-agent-core/src/session.rs)
 - **Session Checkpoints**: Save conversation `Vec<Message>` state to `~/.config/rust-agent-core/sessions/<session_id>.json`.
-- **CLI Commands**:
-  - `rust-agent-core --resume <session_id>`: Restores conversation history.
-  - `rust-agent-core --list-sessions`: Displays saved conversation checkpoints.
+- **CLI Flags**: `--resume <session_id>` and `--list-sessions`.
 
 ---
 
-### Phase 7: Async Sub-Agent Worker Swarms (`spawn_subagent`) [UPCOMING]
+### Phase 10: Async Sub-Agent Worker Swarms (`spawn_subagent`)
 #### [MODIFY] [src/agent.rs](file:///home/anmol/Projects/rust-agent-core/src/agent.rs)
-- **Sub-Agent Delegation**: Add `spawn_subagent` function schema allowing the main agent loop to spawn background worker tasks via `tokio::spawn` and `tokio::sync::mpsc` channels.
-- **Parallel Work**: Concurrently execute web searches, document retrievals, and shell commands in parallel worker tasks.
+- **Sub-Agent Delegation**: Allow main agent loop to spawn background worker tasks via `tokio::spawn` and `tokio::sync::mpsc` channels.
+- **Parallel Execution**: Concurrently execute web searches, document retrievals, and shell diagnostics.
 
 ---
 
-### Phase 8: Cross-Platform Packaging & Distribution [UPCOMING]
+### Phase 11: Cross-Platform Packaging & Distribution
 #### [MODIFY] [Cargo.toml](file:///home/anmol/Projects/rust-agent-core/Cargo.toml) & GitHub Actions
-- **`cargo-dist` Integration**: Automate binary releases for Linux (x86_64, aarch64), macOS (Apple Silicon / Intel), and Windows.
-- **Package Managers**: Publish to Crates.io (`cargo install rust-agent-core`), Arch AUR (`PKGBUILD`), and GitHub Releases tarballs.
+- **`cargo-dist` Integration**: Automate pre-compiled binary releases for Linux (x86_64, aarch64), macOS (Apple Silicon / Intel), and Windows.
+- **Distribution Channels**: Crates.io (`cargo install rust-agent-core`), Arch AUR (`PKGBUILD`), and GitHub Release tarballs.
 
 ---
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `cargo check` to verify schema typing and crate linkage.
-- Run `cargo build --release` to compile optimized single-binary release.
+- `cargo check`: Verify schema typing and crate linkage.
+- `cargo test`: Unit tests for sliding-window memory buffer, BM25 tokenizer, and RRF rank fusion.
+- `cargo build --release`: Verify single-binary compilation.
 
 ### Manual Verification
-- Test `--safe-mode` interactive prompt `[y/N]` when agent calls `run_command` or `write_file`.
-- Test `--read-only` flag blocking mutating tools with permission error.
-- Test `--yolo` flag executing tools autonomously without prompts.
-- Test document retrieval across mixed `.pdf`, `.csv`, `.md`, `.json`, and `.txt` files.
-- Test 0-second instant startup from `.vector_cache.bin`.
-- Test live web search queries.
+- Test `exit`/`quit` command interceptor in REPL.
+- Test 10+ turn conversation to verify token usage stays under 1,500 tokens (Groq 8k TPM limit never hit).
+- Test long-term memory recall ("what is my name?").
+- Test hybrid RRF keyword search for exact code symbol queries.
+- Test `--verbose` telemetry output.
