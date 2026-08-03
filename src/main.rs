@@ -80,6 +80,28 @@ async fn main() -> anyhow::Result<()> {
             continue;
         }
 
+        match query.to_lowercase().as_str() {
+            "exit" | "quit" | ":q" => {
+                eprintln!("Goodbye!");
+                break;
+            }
+            "clear" => {
+                print!("\x1B[2J\x1B[1;1H");
+                use std::io::Write;
+                std::io::stdout().flush().ok();
+                continue;
+            }
+            "help" => {
+                println!("Available commands:");
+                println!("  exit, quit, :q  - Exit the REPL session");
+                println!("  clear           - Clear terminal screen");
+                println!("  help            - Display this help message");
+                println!("  <query>         - Ask a question or run an autonomous task");
+                continue;
+            }
+            _ => {}
+        }
+
         match agent.ask_chat(&mut history, query).await {
             Ok(answer) => println!("{answer}"),
             Err(e) => eprintln!("Error: {e}"),
