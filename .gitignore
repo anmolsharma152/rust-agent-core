@@ -3,3 +3,4 @@ target/
 .vector_cache.bin
 .fastembed_cache/
 *.bin
+conversation_log.txt
