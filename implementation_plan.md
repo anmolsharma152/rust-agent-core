@@ -42,18 +42,15 @@ This comprehensive master implementation plan details the architecture and roadm
 - `--read-only`: Auditing mode blocking destructive operations.
 - `--yolo`: Fully autonomous execution mode.
 
+### Phase 5: REPL UX & Command Interceptors [COMPLETED]
+- Implemented zero-latency command interceptors in `src/main.rs`: `exit`, `quit`, `:q`, `clear`, and `help`.
+- Intercepts built-in commands instantly without making LLM API calls over the network.
+
 ---
 
 ## Upcoming Technical Phases
 
-### Phase 5: REPL UX & Command Interceptors [CURRENT / ACTIVE]
-#### [MODIFY] [src/main.rs](file:///home/anmol/Projects/rust-agent-core/src/main.rs)
-- **Built-in CLI Commands**: Intercept `exit`, `quit`, `:q`, `help`, and `clear` commands directly in the REPL loop without triggering network LLM API calls.
-- **Graceful Termination**: Print `Goodbye!` and cleanly break stdin loop immediately.
-
----
-
-### Phase 6: Dual-Layer Agent Memory & Token Budgeting [HIGH PRIORITY]
+### Phase 6: Dual-Layer Agent Memory & Token Budgeting [CURRENT / HIGH PRIORITY]
 #### [NEW] [src/memory.rs](file:///home/anmol/Projects/rust-agent-core/src/memory.rs)
 - **Short-Term Sliding Window Buffer**: Maintain active window of last 4–6 turns (~1,200 token budget) to prevent hitting Groq 8,000 TPM Free Tier rate limits.
 - **Fact Extraction & Summarization**: When turns slide out of short-term window, extract key facts (e.g. *"User's name is Anmol"*).
